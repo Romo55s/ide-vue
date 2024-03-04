@@ -6,11 +6,15 @@ export const useStore = defineStore({
   state: () => ({
     sidebarWidth: '10em',
     collapsed: false,
+    contents: '',
   }),
   actions: {
     toggleSidebar() {
       this.collapsed = !this.collapsed;
       this.sidebarWidth = this.collapsed ? '4.5em' : '10em';
     },
+    setContents(contents: string) {
+      this.contents = contents;
+    }
   },
 });

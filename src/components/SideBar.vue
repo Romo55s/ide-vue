@@ -5,7 +5,7 @@
             <img :src="collapsed ? luvenSingle : luven" alt="Logo" class="w-32 h-32" />
         </div>
         <SideBarLink to="/editor" icon="fa-regular fa-file" title="New File" style="color: #FFC200;">New file</SideBarLink>
-        <SideBarLink to="/" icon="fa-regular fa-folder-open" title="Open file" style="color: rgb(3,172,240);">Open file</SideBarLink>
+        <SideBarLink to="/" icon="fa-regular fa-folder-open" title="Open file" style="color: rgb(3,172,240);" @click="readFileContents">Open file</SideBarLink>
         <SideBarLink to="/" icon="fa-regular fa-save" title="Save" style="color: #00AE6B;">Save</SideBarLink>
         <SideBarLink to="/" icon="fa-regular fa-edit" title="Save as" style="color: #875AF8;">Save as</SideBarLink>
 
@@ -18,21 +18,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, provide } from "vue";
+import { computed, ref } from "vue";
 import SideBarLink from "./SideBarLink.vue";
 import luvenSingle from '../assets/icons/luven-single.svg';
 import luven from '../assets/icons/luven.svg';
-import { useStore } from '../stores/useStore';
 import { open } from "@tauri-apps/api/dialog";
-
+import { useStore } from '../stores/useStore';
+import { useRouter } from 'vue-router';
+import { readTextFile } from "@tauri-apps/api/fs";
 
 const store = useStore();
+const router = useRouter();
+const contents = ref("");
 
-let toggleSideBar = () => {
+const readFileContents = async () => {
+    try {
+        const selectedPath = await open({
+            multiple: false,
+            title: 'Open Text File'
+        });
+        if (!selectedPath) return;
+        contents.value = await readTextFile(selectedPath as string);
+        console.log(contents.value);
+        store.setContents(contents.value);
+        router.push('/editor');
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+const toggleSideBar = () => {
     store.toggleSidebar();
 };
 
-let sidebarWidth = computed(() => store.sidebarWidth);
-let collapsed = computed(() => store.collapsed);
-
+const sidebarWidth = computed(() => store.sidebarWidth);
+const collapsed = computed(() => store.collapsed);
 </script>

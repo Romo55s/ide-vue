@@ -24,7 +24,5 @@ interface MyProps {
 }
 
 const props = defineProps<MyProps>();
-console.log("props", props);
-console.log(props.icon);
 const isActive = computed(() => route.path === String(props.to));
 </script>
