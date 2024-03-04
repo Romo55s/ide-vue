@@ -2,7 +2,7 @@
   <div class="flex">
     <div style="margin-top: 3%">
       <Codemirror
-        v-model="contentDisplay"
+        :value="code"
         :options="cmOptions"
         ref="cmRef"
         @change="onChange"
@@ -24,19 +24,17 @@ import "codemirror/mode/javascript/javascript.js";
 import { useStore } from "../stores/useStore";
 
 const store = useStore();
-let contents = computed(() => store.contents);
-let contentDisplay = contents.value;
-console.log(contentDisplay)
-
-
-const code = ref(
+const contents = ref(store.contents);
+console.log(contents.value);
+//let code = computed(() => contents.value.split(/\r\n/));
+/*const code = ref(
   `var i = 0;
       for (; i < 9; i++) {
           console.log(i);
           // more statements
       }
       `
-);
+);*/
 
 const cmRef = ref<CmComponentRef>();
 const cmOptions: EditorConfiguration = {
@@ -44,6 +42,9 @@ const cmOptions: EditorConfiguration = {
   theme: "default",
 };
 
+let code = contents.value;
+
+console.log(code);
 const onChange = (val: string, cm: Editor) => {
   console.log(val);
   console.log(cm.getValue());
@@ -70,4 +71,5 @@ onMounted(() => {
 onUnmounted(() => {
   cmRef.value?.destroy();
 });
+
 </script>
