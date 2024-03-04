@@ -1,6 +1,6 @@
 <template>
   <div class="flex">
-    <div style="margin-top: 3%">
+    <div class="mt-12 h-full w-full">
       <Codemirror
         :value="code"
         :options="cmOptions"
@@ -16,30 +16,29 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, type ComputedRef, watch } from "vue";
 import "codemirror/mode/javascript/javascript.js";
+import "codemirror/keymap/sublime.js";
 import Codemirror from "codemirror-editor-vue3";
 import type { CmComponentRef } from "codemirror-editor-vue3";
 import type { Editor, EditorConfiguration } from "codemirror";
 import "codemirror/mode/javascript/javascript.js";
-
+import "codemirror/addon/hint/show-hint.js"; // Importa el addon para el autocompletado
+import "codemirror/addon/hint/javascript-hint.js"; // Importa el addon para el autocompletado de JavaScript
+import "codemirror/lib/codemirror.css";
+import "codemirror/theme/night.css";
 import { useStore } from "../stores/useStore";
 
 const store = useStore();
 const contents = ref(store.contents);
 console.log(contents.value);
-//let code = computed(() => contents.value.split(/\r\n/));
-/*const code = ref(
-  `var i = 0;
-      for (; i < 9; i++) {
-          console.log(i);
-          // more statements
-      }
-      `
-);*/
 
 const cmRef = ref<CmComponentRef>();
 const cmOptions: EditorConfiguration = {
   mode: "text/javascript",
-  theme: "default",
+  theme: "night",
+  keyMap: 'sublime', // Configura el keymap para utilizar sublime.js
+  extraKeys: {
+      "Ctrl-Space": "autocomplete" // Activa el autocompletado con Ctrl + Espacio
+    },
 };
 
 let code = contents.value;
