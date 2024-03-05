@@ -590,6 +590,10 @@ video {
   margin-top: 2rem;
 }
 
+.mt-12 {
+  margin-top: 3rem;
+}
+
 .block {
   display: block;
 }
@@ -610,12 +614,13 @@ video {
   height: 2rem;
 }
 
-.h-\[100vh\] {
-  height: 100vh;
+.max-h-min {
+  max-height: -moz-min-content;
+  max-height: min-content;
 }
 
-.h-full {
-  height: 100%;
+.min-h-\[100vh\] {
+  min-height: 100vh;
 }
 
 .w-10 {
@@ -628,10 +633,6 @@ video {
 
 .w-full {
   width: 100%;
-}
-
-.w-\[100vh\] {
-  width: 100vh;
 }
 
 .shrink-0 {
@@ -779,7 +780,7 @@ video {
 body {
   margin: 0 auto;
   padding: 0;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .hover\:bg-gray-600:hover {

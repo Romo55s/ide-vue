@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-neutral-950 float-left text-white relative z-1 p-0.5 ease-out duration-100 flex flex-col h-[100vh]"
+    <div class="bg-neutral-950 float-left text-white relative z-1 p-0.5 ease-out duration-100 flex flex-col min-h-[100vh] max-h-min"
         :style="{ width: sidebarWidth }">
         <div class="flex justify-center mt-8 items-center">
             <img :src="collapsed ? luvenSingle : luven" alt="Logo" class="w-32 h-32" />

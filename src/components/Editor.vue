@@ -1,6 +1,7 @@
 <template>
   <div class="flex">
     <Codemirror
+      class="mt-12"
       :value="code"
       :options="cmOptions"
       ref="cmRef"

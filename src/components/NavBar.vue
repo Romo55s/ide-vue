@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-neutral-950 z-10 w-full relative text-white">
+  <header class="bg-neutral-950 z-10 w-full absolute text-white">
     <nav class="flex justify-start p-2 w-full mx-8 my-0 flex-row">
       <ul class="font-bold text-white text-xs flex space-x-4">
         <li
