@@ -648,6 +648,14 @@ video {
   height: 100%;
 }
 
+.h-3\/4 {
+  height: 75%;
+}
+
+.h-3\/6 {
+  height: 50%;
+}
+
 .w-10 {
   width: 2.5rem;
 }
@@ -658,6 +666,10 @@ video {
 
 .w-full {
   width: 100%;
+}
+
+.w-3\/4 {
+  width: 75%;
 }
 
 .shrink-0 {
@@ -709,6 +721,10 @@ video {
   overflow: hidden;
 }
 
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
 .bg-gray-800 {
   --tw-bg-opacity: 1;
   background-color: rgb(31 41 55 / var(--tw-bg-opacity));
@@ -732,6 +748,11 @@ video {
 .bg-neutral-950 {
   --tw-bg-opacity: 1;
   background-color: rgb(10 10 10 / var(--tw-bg-opacity));
+}
+
+.bg-gray-900 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(17 24 39 / var(--tw-bg-opacity));
 }
 
 .p-0 {
@@ -765,6 +786,12 @@ video {
 
 .opacity-100 {
   opacity: 1;
+}
+
+.shadow-md {
+  --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
 .transition {

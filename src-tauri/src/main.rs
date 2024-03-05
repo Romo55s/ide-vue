@@ -25,3 +25,10 @@ fn save_file(path: String, contents: String) -> Result<(), String> {
         Err(e) => Err(format!("Error al guardar el archivo: {}", e)),
     }
 }
+
+#[tauri::command]
+async fn run_command(command: String) -> Result<String, String> {
+    // Aquí implementa la lógica para ejecutar el comando recibido
+    // y devuelve el resultado o un mensaje de error si es necesario
+    Ok("Resultado del comando".to_string())
+}
