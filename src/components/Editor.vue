@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-full h-full m-0 p-0 mx-0 my-0">
+  <div class="flex">
     <Codemirror
       :value="code"
       :options="cmOptions"

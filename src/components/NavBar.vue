@@ -47,22 +47,21 @@
             class="absolute top-full left-0 bg-neutral-700 text-white shadow-md"
           >
             <li>
-              <a href="#" class="block px-4 py-2 hover:bg-neutral-800">Lexico</a>
+                <a href="#" class="block px-4 py-2 hover:bg-neutral-800">Lexical</a>
             </li>
             <li>
               <a href="#" class="block px-4 py-2 hover:bg-neutral-800"
-                >Sintactico</a
+                >Syntax</a
               >
             </li>
             <li>
               <a href="#" class="block px-4 py-2 hover:bg-neutral-800"
-                >Semantico</a
+                >Semantic</a
               >
             </li>
             <li>
-              <a href="#" class="block px-4 py-2 hover:bg-neutral-800">Compilar</a>
+              <a href="#" class="block px-4 py-2 hover:bg-neutral-800">Run</a>
             </li>
-            <!-- More dropdown items for Build and Debug here -->
           </ul>
         </li>
       </ul>

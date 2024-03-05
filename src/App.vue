@@ -14,7 +14,7 @@ let sidebarWidth = computed(() => store.sidebarWidth);
 <template>
   <NavBar/>
   <SideBar/>
-  <div :style="{'margin-left': sidebarWidth as string}">
+  <div>
     <router-view></router-view>
   </div>
   <!-- <Terminal/> -->
