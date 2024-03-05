@@ -1,13 +1,13 @@
 <template>
-    <div class="bg-neutral-950 float-left text-white fixed z-1 p-0.5 ease-out duration-100 flex flex-col h-full"
+    <div class="bg-neutral-950 float-left text-white relative z-1 p-0.5 ease-out duration-100 flex flex-col h-[100vh]"
         :style="{ width: sidebarWidth }">
-        <div class="flex justify-center mt-8">
+        <div class="flex justify-center mt-8 items-center">
             <img :src="collapsed ? luvenSingle : luven" alt="Logo" class="w-32 h-32" />
         </div>
         <SideBarLink to="/editor" icon="fa-regular fa-file" title="New File" @click="NewFile">New file</SideBarLink>
         <SideBarLink to="/" icon="fa-regular fa-folder-open" title="Open file" @click="readFileContents">Open file</SideBarLink>
         <SideBarLink to="/" icon="fa-regular fa-save" title="Save" @click="saveFileContents" >Save</SideBarLink>
-
+        <SideBarLink to="/" icon="fa-solid fa-play" title="Run" >Run</SideBarLink>
         <span class="absolute bottom-0 p-4 color-white ease-linear duration-200" @click="toggleSideBar"
             :class="{ 'transform rotate-180': collapsed }">
             <i class="fas fa-angle-double-left"></i>
