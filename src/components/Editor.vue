@@ -30,27 +30,28 @@ import { useStore } from "../stores/useStore";
 const store = useStore();
 const contents = ref(store.contents);
 console.log(contents.value);
-
+const message = ref("");
 const cmRef = ref<CmComponentRef>();
 const cmOptions: EditorConfiguration = {
   mode: "text/javascript",
   theme: "night",
-  keyMap: 'sublime', // Configura el keymap para utilizar sublime.js
+  keyMap: 'sublime',
   extraKeys: {
-      "Ctrl-Space": "autocomplete" // Activa el autocompletado con Ctrl + Espacio
+      "Ctrl-Space": "autocomplete"
     },
 };
 
-let code = contents.value;
-
+const code = computed(() => store.contents);
 console.log(code);
 const onChange = (val: string, cm: Editor) => {
   console.log(val);
   console.log(cm.getValue());
+  store.setContents(cm.getValue());
 };
 
 const onInput = (val: string) => {
   console.log(val);
+  store.setContents(val);
 };
 
 const onReady = (cm: Editor) => {
