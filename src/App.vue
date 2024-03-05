@@ -16,6 +16,7 @@ let sidebarWidth = computed(() => store.sidebarWidth);
   <div :style="{'margin-left': sidebarWidth as string}">
     <router-view></router-view>
   </div>
+  <!-- Terminal -->
 </template>
 
 <style scoped></style>

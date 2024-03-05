@@ -66,10 +66,11 @@
     },
     "windows": [
       {
+        "decorations": true,
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "Tauri IDE App",
+        "title": "Luven",
         "width": 800
       }
     ]

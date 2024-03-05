@@ -1,20 +1,27 @@
 <template>
-  <div class="flex">
-    <div class="mt-12 h-full w-full">
-      <Codemirror
-        :value="code"
-        :options="cmOptions"
-        ref="cmRef"
-        @change="onChange"
-        @input="onInput"
-        @ready="onReady"
-      />
-    </div>
+  <div class="mt-12 flex fixed w-full h-full">
+    <Codemirror
+      :value="code"
+      :options="cmOptions"
+      ref="cmRef"
+      height="100vh"
+      width="100%"
+      @change="onChange"
+      @input="onInput"
+      @ready="onReady"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, type ComputedRef, watch } from "vue";
+import {
+  ref,
+  onMounted,
+  onUnmounted,
+  computed,
+  type ComputedRef,
+  watch,
+} from "vue";
 import "codemirror/mode/javascript/javascript.js";
 import "codemirror/keymap/sublime.js";
 import Codemirror from "codemirror-editor-vue3";
@@ -25,6 +32,7 @@ import "codemirror/addon/hint/show-hint.js"; // Importa el addon para el autocom
 import "codemirror/addon/hint/javascript-hint.js"; // Importa el addon para el autocompletado de JavaScript
 import "codemirror/lib/codemirror.css";
 import "codemirror/theme/night.css";
+import "codemirror/theme/material-darker.css"; // Import the dark theme
 import { useStore } from "../stores/useStore";
 
 const store = useStore();
@@ -34,29 +42,23 @@ const message = ref("");
 const cmRef = ref<CmComponentRef>();
 const cmOptions: EditorConfiguration = {
   mode: "text/javascript",
-  theme: "night",
-  keyMap: 'sublime',
+  theme: "material-darker", // Use the "material-darker" theme
+  keyMap: "sublime",
   extraKeys: {
-      "Ctrl-Space": "autocomplete"
-    },
+    "Ctrl-Space": "autocomplete",
+  },
 };
 
 const code = computed(() => store.contents);
-console.log(code);
 const onChange = (val: string, cm: Editor) => {
-  console.log(val);
-  console.log(cm.getValue());
   store.setContents(cm.getValue());
 };
 
 const onInput = (val: string) => {
-  console.log(val);
   store.setContents(val);
 };
 
-const onReady = (cm: Editor) => {
-  console.log(cm.focus());
-};
+const onReady = (cm: Editor) => {};
 
 onMounted(() => {
   setTimeout(() => {
@@ -71,5 +73,4 @@ onMounted(() => {
 onUnmounted(() => {
   cmRef.value?.destroy();
 });
-
 </script>

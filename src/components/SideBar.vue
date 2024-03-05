@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-gray-800 float-left text-white fixed z-1 p-0.5 ease-out duration-100 flex flex-col h-full"
+    <div class="bg-neutral-950 float-left text-white fixed z-1 p-0.5 ease-out duration-100 flex flex-col h-full"
         :style="{ width: sidebarWidth }">
         <div class="flex justify-center mt-8">
             <img :src="collapsed ? luvenSingle : luven" alt="Logo" class="w-32 h-32" />
@@ -7,7 +7,6 @@
         <SideBarLink to="/editor" icon="fa-regular fa-file" title="New File" @click="NewFile">New file</SideBarLink>
         <SideBarLink to="/" icon="fa-regular fa-folder-open" title="Open file" @click="readFileContents">Open file</SideBarLink>
         <SideBarLink to="/" icon="fa-regular fa-save" title="Save" @click="saveFileContents" >Save</SideBarLink>
-        <SideBarLink to="/" icon="fa-regular fa-edit" title="Save as">Save as</SideBarLink>
 
         <span class="absolute bottom-0 p-4 color-white ease-linear duration-200" @click="toggleSideBar"
             :class="{ 'transform rotate-180': collapsed }">
@@ -25,7 +24,7 @@ import luven from '../assets/icons/luven.svg';
 import { open, save } from "@tauri-apps/api/dialog";
 import { useStore } from '../stores/useStore';
 import { useRouter } from 'vue-router';
-import { readTextFile } from "@tauri-apps/api/fs";
+import { BaseDirectory, readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { invoke } from '@tauri-apps/api/tauri'
 
 const store = useStore();
@@ -38,21 +37,23 @@ const NewFile = async () => {
     store.setContents("");
 };
 
+
 const saveFileContents = async () => {
-  try {
-    const result = await save();
-    if (!result) {
-      console.warn("No se seleccionó ningún archivo.");
-      return;
+    try {
+        const result = await save();
+        if (!result) {
+            console.warn("No se seleccionó ningún archivo.");
+            return;
+        }
+        console.log(result);
+        console.log(store.contents);
+
+        await invoke("save_file", { path: result, contents: store.contents });
+    } catch (error) {
+        console.error("Error al intentar guardar el archivo:", error);
     }
-    console.log(result);
-    console.log(store.contents);
-    
-    await invoke("save_file", { path: result, contents: store.contents });
-  } catch (error) {
-    console.error("Error al intentar guardar el archivo:", error);
-  }
 }
+
 
 
 const readFileContents = async () => {
