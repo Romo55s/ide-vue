@@ -7,7 +7,7 @@ export const useStore = defineStore({
     sidebarWidth: "10em",
     collapsed: false,
     contents: ref(""),
-    flagNewFile: false,
+    paths: ref("")
   }),
   actions: {
     toggleSidebar() {
@@ -17,8 +17,8 @@ export const useStore = defineStore({
     setContents(contents: string | null | undefined) {
       this.contents = contents || "";
     },
-    setFlagNewFile(flag : boolean) {
-      this.flagNewFile = flag;
-    }
+    setPaths(paths: string | null | undefined) {
+      this.paths = paths || "";
+    },
   },
 });
