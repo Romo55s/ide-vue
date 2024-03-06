@@ -13,7 +13,7 @@ fn save_file_or_save_as(path: &str, contents: &str) -> Result<(), std::io::Error
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![save_file])
+        .invoke_handler(tauri::generate_handler![save_file, remove_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -27,8 +27,16 @@ fn save_file(path: String, contents: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn run_command(command: String) -> Result<String, String> {
-    // Aquí implementa la lógica para ejecutar el comando recibido
-    // y devuelve el resultado o un mensaje de error si es necesario
-    Ok("Resultado del comando".to_string())
+async fn remove_file(path: String) -> Result<(), String> {
+    match fs::remove_file(path) {
+        Ok(_) => Ok(()),
+        Err(err) => Err(err.to_string()),
+    }
 }
+
+//#[tauri::command]
+//async fn run_command(command: String) -> Result<String, String> {
+//    // Aquí implementa la lógica para ejecutar el comando recibido
+//    // y devuelve el resultado o un mensaje de error si es necesario
+//    Ok("Resultado del comando".to_string())
+//}
