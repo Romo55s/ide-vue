@@ -13,7 +13,7 @@
             class="absolute top-full left-0 bg-neutral-700 text-white shadow-md"
           >
             <li>
-              <a href="#" class="block px-4 py-2 hover:bg-neutral-800">Close</a>
+              <a href="#" class="block px-4 py-2 hover:bg-neutral-800" @click="closeFile">Close</a>
             </li>
             <!-- More dropdown items for File here -->
           </ul>
@@ -71,6 +71,16 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useStore } from '../stores/useStore';
+import { useRouter } from 'vue-router';
+
+const store = useStore();
+const router = useRouter();
+
+const closeFile = () => {
+    store.setContents("");
+    router.push('/');
+};
 
 interface DropdownState {
   file: boolean;
