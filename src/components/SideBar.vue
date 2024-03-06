@@ -5,7 +5,7 @@
             <img :src="collapsed ? luvenSingle : luven" alt="Logo" class="w-32 h-32" />
         </div>
         <SideBarLink to="/editor" icon="fa-regular fa-file" title="New File" @click="NewFile">New file</SideBarLink>
-        <SideBarLink to="" icon="fa-regular fa-trash-can" title="Delete file" @click="DeleteFile">Delete file</SideBarLink>
+        <SideBarLink to="/" icon="fa-regular fa-trash-can" title="Delete file" @click="DeleteFile">Delete file</SideBarLink>
         <SideBarLink to="" icon="fa-regular fa-folder-open" title="Open file" @click="readFileContents">Open file</SideBarLink>
         <SideBarLink to="" icon="fa-regular fa-save" title="Save" @click="saveFileContents" v-if="!store.flagNewFile">Save</SideBarLink>
         <SideBarLink to="" icon="fa-regular fa-pen-to-square" title="Save as" @click="saveAsFileContents" >Save as</SideBarLink>

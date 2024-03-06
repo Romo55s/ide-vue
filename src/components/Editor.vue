@@ -11,6 +11,7 @@
       @input="onInput"
       @ready="onReady"
     />
+
   </div>
 </template>
 
@@ -51,15 +52,22 @@ const cmOptions: EditorConfiguration = {
 };
 
 const code = computed(() => store.contents);
+
 const onChange = (val: string, cm: Editor) => {
   store.setContents(cm.getValue());
+
 };
 
 const onInput = (val: string) => {
   store.setContents(val);
+
 };
 
-const onReady = (cm: Editor) => {};
+const onReady = (cm: Editor) => {
+
+};
+
+
 
 onMounted(() => {
   setTimeout(() => {
