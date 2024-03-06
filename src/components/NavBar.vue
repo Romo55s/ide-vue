@@ -115,6 +115,8 @@ import { useRouter } from "vue-router";
 import { invoke } from "@tauri-apps/api";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { open, save } from "@tauri-apps/api/dialog";
+import { toast } from "vue3-toastify";
+import "vue3-toastify/dist/index.css";
 
 const store = useStore();
 const router = useRouter();
@@ -124,6 +126,11 @@ const paths = ref(store.paths);
 const closeFile = () => {
   store.setContents("");
   router.push("/");
+  toast.success("File closed", {
+      position: toast.POSITION.TOP_RIGHT,
+      theme: 'dark',
+      duration: 2000,
+    });
 };
 
 const DeleteFile = async () => {
@@ -142,6 +149,11 @@ const DeleteFile = async () => {
     store.setContents("");
     store.setPaths("");
     store.setFlagNewFile(true); // Si es necesario establecer alguna otra bandera, hazlo aquí
+    toast.success("¡File successfully deleted!", {
+      position: toast.POSITION.TOP_RIGHT,
+      theme: 'dark',
+      duration: 2000,
+    });
   } catch (error) {
     console.error("Error al intentar eliminar el archivo:", error);
   }
@@ -160,9 +172,13 @@ const saveFileContents = async () => {
       console.warn("No hay ningún archivo abierto para sobrescribir.");
       return;
     }
-
     // Sobrescribe el archivo existente con el contenido actual
     await writeTextFile(store.paths, store.contents);
+    toast.success("¡File successfully saved!", {
+      position: toast.POSITION.TOP_RIGHT,
+      theme: 'dark',
+      duration: 2000,
+    });
     console.log("¡Archivo sobrescrito exitosamente!");
   } catch (error) {
     console.error("Error al intentar sobrescribir el archivo:", error);
@@ -173,7 +189,11 @@ const saveAsFileContents = async () => {
   try {
     const result = await save();
     if (!result) {
-      console.warn("No se seleccionó ningún archivo.");
+      toast.error("No file selected", {
+      position: toast.POSITION.TOP_RIGHT,
+      theme: 'dark',
+      duration: 2000,
+    });
       return;
     }
     console.log(result);
@@ -181,8 +201,17 @@ const saveAsFileContents = async () => {
     console.log(store.contents);
     store.setFlagNewFile(false);
     await invoke("save_file", { path: result, contents: store.contents });
+    toast("Default Notification !");
+    toast.success("Success Notification !", {
+      position: toast.POSITION.TOP_CENTER,
+    });
   } catch (error) {
-    console.error("Error al intentar guardar el archivo:", error);
+    toast.error("Error while trying to save the file!", {
+      position: toast.POSITION.TOP_RIGHT,
+      theme: 'dark',
+      duration: 2000,
+    });
+    console.error("Error while trying to save the file:", error);
   }
 };
 
@@ -200,6 +229,11 @@ const readFileContents = async () => {
     store.setPaths(selectedPath as string);
     router.push("/editor");
     store.setFlagNewFile(false);
+    toast.success("¡File successfully open!", {
+      position: toast.POSITION.TOP_RIGHT,
+      theme: 'dark',
+      duration: 2000,
+    });
   } catch (error) {
     console.log(error);
   }
