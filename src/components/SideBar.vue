@@ -87,8 +87,6 @@ const saveFileContents = async () => {
     }
 }
 
-
-
 const saveAsFileContents = async () => {
     try {
         const result = await save();
@@ -105,9 +103,6 @@ const saveAsFileContents = async () => {
         console.error("Error al intentar guardar el archivo:", error);
     }
 }
-
-
-
 
 const readFileContents = async () => {
     try {
