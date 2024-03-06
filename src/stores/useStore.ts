@@ -7,6 +7,7 @@ export const useStore = defineStore({
     sidebarWidth: "10em",
     collapsed: false,
     contents: ref(""),
+    paths: ref("")
   }),
   actions: {
     toggleSidebar() {
@@ -15,6 +16,9 @@ export const useStore = defineStore({
     },
     setContents(contents: string | null | undefined) {
       this.contents = contents || "";
+    },
+    setPaths(paths: string | null | undefined) {
+      this.paths = paths || "";
     },
   },
 });
