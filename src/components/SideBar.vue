@@ -6,7 +6,7 @@
         </div>
         <SideBarLink to="/editor" icon="fa-regular fa-file" title="New File" @click="NewFile">New file</SideBarLink>
         <SideBarLink to="/" icon="fa-regular fa-folder-open" title="Open file" @click="readFileContents">Open file</SideBarLink>
-        <SideBarLink to="/" icon="fa-regular fa-save" title="Save" @click="saveFileContents" >Save</SideBarLink>
+        <SideBarLink to="/" icon="fa-regular fa-save" title="Save" @click="saveFileContents" v-if="!store.flagNewFile">Save</SideBarLink>
         <SideBarLink to="/" icon="fa-solid fa-play" title="Run" >Run</SideBarLink>
         <span class="absolute bottom-0 p-4 color-white ease-linear duration-200" @click="toggleSideBar"
             :class="{ 'transform rotate-180': collapsed }">
@@ -33,6 +33,7 @@ const contents = ref(store.contents);
 console.log('Contents from store:', contents.value);
 
 const NewFile = async () => {
+    store.setFlagNewFile(true);
     await router.push('/editor');
     store.setContents("");
 };
@@ -67,6 +68,7 @@ const readFileContents = async () => {
         console.log(contents.value);
         store.setContents(contents.value);
         router.push('/editor');
+        store.setFlagNewFile(false);
     } catch (error) {
         console.log(error);
     }
