@@ -56,7 +56,7 @@ const saveFileContents = async () => {
         
         // Sobrescribe el archivo existente con el contenido actual
         await writeTextFile(store.paths, store.contents);
-        router.push('/editor');
+        await router.replace('/editor');
         console.log("¡Archivo sobrescrito exitosamente!");
     } catch (error) {
         console.error("Error al intentar sobrescribir el archivo:", error);
@@ -74,9 +74,9 @@ const saveAsFileContents = async () => {
         }
         console.log(result);
         console.log(store.contents);
-
+        store.setFlagNewFile(false);
         await invoke("save_file", { path: result, contents: store.contents });
-        router.push('/editor');
+        await router.replace('/editor');
     } catch (error) {
         console.error("Error al intentar guardar el archivo:", error);
     }
