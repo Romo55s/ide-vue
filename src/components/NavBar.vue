@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-neutral-950 z-10 w-full absolute text-white">
+  <header class="bg-neutral-950 z-10 w-full fixed text-white">
     <nav class="flex justify-between p-2 w-full mx-8 my-0 flex-row">
       <ul class="font-bold text-white text-xs flex space-x-4">
         <li
@@ -92,22 +92,22 @@
             class="absolute top-full left-0 bg-neutral-700 text-white shadow-md"
           >
             <li>
-              <a href="#" class="block px-4 py-2 hover:bg-neutral-800"
+              <a href="/lexic" class="block px-4 py-2 hover:bg-neutral-800"
                 >Lexical</a
               >
             </li>
             <li>
-              <a href="#" class="block px-4 py-2 hover:bg-neutral-800"
+              <a href="/syntactic" class="block px-4 py-2 hover:bg-neutral-800"
                 >Syntax</a
               >
             </li>
             <li>
-              <a href="#" class="block px-4 py-2 hover:bg-neutral-800"
+              <a href="/semantic" class="block px-4 py-2 hover:bg-neutral-800"
                 >Semantic</a
               >
             </li>
             <li>
-              <a href="#" class="block px-4 py-2 hover:bg-neutral-800">Run</a>
+              <a href="/run" class="block px-4 py-2 hover:bg-neutral-800">Run</a>
             </li>
             <li>
               <a href="/Errors" class="block px-4 py-2 hover:bg-neutral-800">Errors</a>
