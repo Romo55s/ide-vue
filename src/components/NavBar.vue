@@ -1,6 +1,6 @@
 <template>
   <header class="bg-neutral-950 z-10 w-full absolute text-white">
-    <nav class="flex justify-start p-2 w-full mx-8 my-0 flex-row">
+    <nav class="flex justify-between p-2 w-full mx-8 my-0 flex-row">
       <ul class="font-bold text-white text-xs flex space-x-4">
         <li
           class="relative"
@@ -112,6 +112,13 @@
           </ul>
         </li>
       </ul>
+      <li
+        v-if="store.flagEditor"
+        class="flex gap-4 mr-12 font-bold text-white text-xs space-x-4 justify-center items-center"
+      >
+        <p>Ln: {{ store.row }}</p>
+        <p>Col: {{ store.column }}</p>
+      </li>
     </nav>
   </header>
 </template>
@@ -131,13 +138,16 @@ const paths = ref(store.paths);
 
 const closeFile = () => {
   store.setContents("");
+  store.setFlagEditor(false);
+  store.setFlagSave(false);
   router.push("/");
 };
 
 const NewFile = async () => {
-    store.setFlagNewFile(true);
-    await router.push('/editor');
-    store.setContents("");
+  store.setFlagNewFile(true);
+  store.setFlagSave(false);
+  await router.push("/editor");
+  store.setContents("");
 };
 
 const DeleteFile = async () => {
@@ -155,7 +165,13 @@ const DeleteFile = async () => {
     store.setContents("");
     store.setPaths("");
     store.setFlagNewFile(true); // Si es necesario establecer alguna otra bandera, hazlo aquí
-    router.push('/');
+    router.push("/");
+    store.setFlagEditor(false);
+    toast.success("File succesfuly deleted", {
+      position: toast.POSITION.TOP_RIGHT,
+      theme: "dark",
+      duration: 2000,
+    });
   } catch (error) {
     console.error("Error al intentar eliminar el archivo:", error);
   }
@@ -193,8 +209,8 @@ const saveAsFileContents = async () => {
     console.log(store.contents);
     store.setFlagNewFile(false);
     await invoke("save_file", { path: result, contents: store.contents });
+    store.setFlagSave(true);
   } catch (error) {
-
     console.error("Error while trying to save the file:", error);
   }
 };
@@ -213,6 +229,7 @@ const readFileContents = async () => {
     store.setPaths(selectedPath as string);
     router.push("/editor");
     store.setFlagNewFile(false);
+    store.setFlagSave(true);
   } catch (error) {
     console.log(error);
   }

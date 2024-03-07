@@ -9,6 +9,10 @@ export const useStore = defineStore({
     contents: ref(""),
     paths: ref(""),
     flagNewFile: false,
+    column: 0,
+    row: 0,
+    flagEditor: false,
+    flagSave: false,
   }),
   actions: {
     toggleSidebar() {
@@ -23,6 +27,18 @@ export const useStore = defineStore({
     },
     setFlagNewFile(flag: boolean) {
       this.flagNewFile = flag;
-    }
+    },
+    setColumn(column: number) {
+      this.column = column + 1;
+    },
+    setRow(row: number) {
+      this.row = row + 1;
+    },
+    setFlagEditor(flag: boolean) {
+      this.flagEditor = flag;
+    },
+    setFlagSave(flag: boolean) {
+      this.flagSave = flag;
+    },
   },
 });

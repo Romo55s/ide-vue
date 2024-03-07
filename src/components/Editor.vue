@@ -10,6 +10,7 @@
       @change="onChange"
       @input="onInput"
       @ready="onReady"
+      @cursorActivity="onCursorActivity" 
     />
 
   </div>
@@ -42,6 +43,7 @@ const contents = ref(store.contents);
 console.log(contents.value);
 const message = ref("");
 const cmRef = ref<CmComponentRef>();
+store.setFlagEditor(true);
 const cmOptions: EditorConfiguration = {
   mode: "text/javascript",
   theme: "material-darker", // Use the "material-darker" theme
@@ -49,6 +51,12 @@ const cmOptions: EditorConfiguration = {
   extraKeys: {
     "Ctrl-Space": "autocomplete",
   },
+};
+
+const onCursorActivity = (cm: Editor) => {
+  const cursor = cm.getCursor(); // Get the current cursor position
+  store.setColumn(cursor.ch); // Update the store with the current column
+  store.setRow(cursor.line); // Update the store with the current row (line)
 };
 
 const code = computed(() => store.contents);
