@@ -109,6 +109,9 @@
             <li>
               <a href="#" class="block px-4 py-2 hover:bg-neutral-800">Run</a>
             </li>
+            <li>
+              <a href="/Errors" class="block px-4 py-2 hover:bg-neutral-800">Errors</a>
+            </li>
           </ul>
         </li>
       </ul>
