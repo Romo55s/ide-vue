@@ -196,6 +196,11 @@ const saveFileContents = async () => {
     // Sobrescribe el archivo existente con el contenido actual
     await writeTextFile(store.paths, store.contents);
     console.log("¡Archivo sobrescrito exitosamente!");
+    toast.success("File saved succesfuly", {
+      position: toast.POSITION.TOP_RIGHT,
+      theme: "dark",
+      duration: 2000,
+    });
   } catch (error) {
     console.error("Error al intentar sobrescribir el archivo:", error);
   }

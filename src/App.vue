@@ -8,18 +8,27 @@ import { computed } from "vue";
 
 const store = useStore();
 
-let sidebarWidth = computed(() => store.sidebarWidth);
+const sidebarWidth = computed(() => store.sidebarWidth);
+const collapsed = computed(() => store.collapsed);
 </script>
 
 <template>
-  <div class="overflow-hidden w-full h-full">
-    <NavBar />
-    <SideBar />
+  <div class="flex flex-col h-screen">
     <div>
-      <router-view></router-view>
+      <NavBar />
+    </div>
+    <div class="flex">
+      <div v-if="collapsed"></div>
+      <div :style="{ width: sidebarWidth }">
+        <SideBar />
+      </div>
+      <div class="flex-grow">
+        <router-view></router-view>
+      </div>
     </div>
   </div>
-  <!-- <Terminal/> -->
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>
+

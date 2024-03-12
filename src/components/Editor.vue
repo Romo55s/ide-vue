@@ -1,7 +1,6 @@
 <template>
-  <div class="flex">
+  <div class="flex overflow-hidden" >
     <Codemirror
-      class="mt-12"
       :value="code"
       :options="cmOptions"
       ref="cmRef"
@@ -52,6 +51,9 @@ const cmOptions: EditorConfiguration = {
     "Ctrl-Space": "autocomplete",
   },
 };
+
+const sidebarWidth = computed(() => store.sidebarWidth);
+const isCollapsed = computed(() => store.collapsed);
 
 const onCursorActivity = (cm: Editor) => {
   const cursor = cm.getCursor(); // Get the current cursor position

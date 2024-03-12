@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-neutral-950 float-left text-white relative z-1 p-0.5 ease-out duration-100 flex flex-col min-h-[100vh] max-h-min"
+    class="bg-neutral-950 float-left text-white p-0.5 fixed ease-out duration-100 flex flex-col h-full"
     :style="{ width: sidebarWidth }"
   >
     <div class="flex justify-center mt-8 items-center">
