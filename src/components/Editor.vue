@@ -1,17 +1,15 @@
 <template>
-  <div class="flex overflow-hidden" >
+  <div class="flex overflow-hidden z-10 flex-1" >
     <Codemirror
       :value="code"
       :options="cmOptions"
       ref="cmRef"
-      height="100vh"
-      width="100%"
+      class=""
       @change="onChange"
       @input="onInput"
       @ready="onReady"
       @cursorActivity="onCursorActivity" 
     />
-
   </div>
 </template>
 

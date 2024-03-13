@@ -13,10 +13,8 @@ const collapsed = computed(() => store.collapsed);
 </script>
 
 <template>
-  <div class="flex flex-col h-screen">
-    <div>
-      <NavBar />
-    </div>
+  <div class="flex flex-col max-h-screen overflow-hidden">
+    <NavBar />
     <div class="flex">
       <div v-if="collapsed"></div>
       <div :style="{ width: sidebarWidth }">
@@ -29,6 +27,4 @@ const collapsed = computed(() => store.collapsed);
   </div>
 </template>
 
-<style scoped>
-</style>
-
+<style scoped></style>

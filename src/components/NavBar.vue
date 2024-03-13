@@ -1,6 +1,6 @@
 <template>
-  <header class="bg-neutral-950 z-10 w-full fixed text-white">
-    <nav class="flex justify-between p-2 w-full mx-8 my-0 flex-row">
+  <header class="bg-neutral-950 z-50 w-full flex-initial text-white">
+    <nav class="flex justify-between p-2 w-full flex-row">
       <ul class="font-bold text-white text-xs flex space-x-4">
         <li
           class="relative"
@@ -10,7 +10,7 @@
           <a href="#" class="block px-4 py-2 hover:bg-neutral-800">File</a>
           <ul
             v-if="showDropdown.file"
-            class="absolute top-full left-0 bg-neutral-700 text-white shadow-md w-28"
+            class="absolute top-auto left-0 bg-neutral-700 text-white shadow-md w-28"
           >
             <li>
               <a
@@ -71,12 +71,11 @@
           <a href="#" class="block px-4 py-2 hover:bg-neutral-800">Edit</a>
           <ul
             v-if="showDropdown.edit"
-            class="absolute top-full left-0 bg-neutral-700 text-white shadow-md"
+            class="absolute top-auto left-0 bg-neutral-700 text-white shadow-md w-28"
           >
             <li>
               <a href="#" class="block px-4 py-2 hover:bg-neutral-800">Copy</a>
             </li>
-            <!-- More dropdown items for Edit here -->
           </ul>
         </li>
         <li
@@ -89,7 +88,7 @@
           >
           <ul
             v-if="showDropdown.build"
-            class="absolute top-full left-0 bg-neutral-700 text-white shadow-md"
+            class="absolute top-auto left-0 bg-neutral-700 text-white shadow-md w-28"
           >
             <li>
               <a href="/lexic" class="block px-4 py-2 hover:bg-neutral-800"
