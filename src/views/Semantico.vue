@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-neutral-900 min-h-screen flex justify-center items-center text-white">
+    <div class="bg-neutral-900 flex justify-center items-center text-white">
       <div class="max-w-3xl p-8">
         <h1 class="text-4xl font-bold mb-4">Semantic</h1>
         <div v-if="errors.length > 0">

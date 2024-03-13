@@ -1,10 +1,10 @@
 <template>
-  <div class="flex overflow-hidden z-10 flex-1" >
+  <div class="flex w-full">
     <Codemirror
       :value="code"
       :options="cmOptions"
       ref="cmRef"
-      class=""
+      height="100%"
       @change="onChange"
       @input="onInput"
       @ready="onReady"
