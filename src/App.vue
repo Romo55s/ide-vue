@@ -13,13 +13,13 @@ const collapsed = computed(() => store.collapsed);
 </script>
 
 <template>
-  <div class="flex flex-col max-h-screen w-full">
+  <div class="max-h-screen w-full min-h-screen">
     <NavBar/>
-    <div class="flex">
-      <div :style="{ width: sidebarWidth }">
+    <div class="flex w-full h-screen">
+      <div :style="{ width: sidebarWidth  }">
         <SideBar />
       </div>
-      <div class="flex-grow w-full h-full">
+      <div class="w-full h-full">
         <router-view></router-view>
       </div>
     </div>
