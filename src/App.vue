@@ -20,7 +20,7 @@ const collapsed = computed(() => store.collapsed);
       <div :style="{ width: sidebarWidth }">
         <SideBar />
       </div>
-      <div class="w-full max-h-full flex flex-col">
+      <div class="w-full max-h-full">
         <router-view></router-view>
       </div>
     </div>

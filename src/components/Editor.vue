@@ -1,15 +1,15 @@
 <template>
-  <div class="flex flex-col w-full h-full z-10 flex-1 min-w-full overflow-hidden">
-    <Codemirror
-      :value="code"
-      :options="cmOptions"
-      ref="cmRef"
-      height=""
-      @change="onChange"
-      @input="onInput"
-      @ready="onReady"
-      @cursorActivity="onCursorActivity" 
-    />
+  <div class="flex flex-col w-full h-full z-10 flex-1 min-w-full overflow-hidden flex-grow-0">
+      <Codemirror
+        :value="code"
+        :options="cmOptions"
+        ref="cmRef"
+        height=""
+        @change="onChange"
+        @input="onInput"
+        @ready="onReady"
+        @cursorActivity="onCursorActivity" 
+      />
     <Terminal class="w-full"/>
   </div>
 </template>
