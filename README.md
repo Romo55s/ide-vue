@@ -34,9 +34,20 @@ To run the program natively, follow these steps:
 
 ### Compile and Hot-Reload for Development
 
+To compile and hot-reload the project for development, use the following command:
+
 ```sh
 npm run dev
+```
+
+```sh
+To lint the code and check for any style inconsistencies, use the following command:
 
 npm run lint
+```
+
+```sh
+To build the project for production, use the following command:
 
 npm run build
+```
