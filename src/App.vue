@@ -3,7 +3,6 @@ import { RouterView } from "vue-router";
 import SideBar from "./components/SideBar.vue";
 import { useStore } from "./stores/useStore";
 import NavBar from "./components/NavBar.vue";
-import Terminal from "./components/Terminal.vue";
 import { computed } from "vue";
 
 const store = useStore();
@@ -23,7 +22,6 @@ const collapsed = computed(() => store.collapsed);
       </div>
       <div class="w-full max-h-full flex flex-col">
         <router-view></router-view>
-        <Terminal class="w-full"/>
       </div>
     </div>
   </div>

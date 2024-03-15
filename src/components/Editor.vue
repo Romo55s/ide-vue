@@ -1,19 +1,21 @@
 <template>
-  <div class="flex w-full h-full z-10 flex-1 min-w-full overflow-hidden">
+  <div class="flex flex-col w-full h-full z-10 flex-1 min-w-full overflow-hidden">
     <Codemirror
       :value="code"
       :options="cmOptions"
       ref="cmRef"
-      height="800px"
+      height=""
       @change="onChange"
       @input="onInput"
       @ready="onReady"
       @cursorActivity="onCursorActivity" 
     />
+    <Terminal class="w-full"/>
   </div>
 </template>
 
 <script setup lang="ts">
+import Terminal from "./Terminal.vue";
 import {
   ref,
   onMounted,

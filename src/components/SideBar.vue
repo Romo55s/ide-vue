@@ -93,7 +93,6 @@ const DeleteFile = async () => {
       toast.error("There is no file open to eliminate", {
         position: toast.POSITION.TOP_RIGHT,
         theme: "dark",
-        duration: 2000,
       });
       console.warn("No hay ningún archivo abierto para eliminar.");
       return;
@@ -105,7 +104,6 @@ const DeleteFile = async () => {
     toast.success("File succesfuly deleted", {
       position: toast.POSITION.TOP_RIGHT,
       theme: "dark",
-      duration: 2000,
     });
     // Limpiar el contenido y el path del archivo
     store.setContents("");
@@ -124,7 +122,6 @@ const saveFileContents = async () => {
       toast.error("There is no content to save", {
         position: toast.POSITION.TOP_RIGHT,
         theme: "dark",
-        duration: 2000,
       });
       console.warn("El contenido está vacío. No hay nada que guardar.");
       return;
@@ -141,7 +138,6 @@ const saveFileContents = async () => {
     toast.success("File saved succesfuly", {
       position: toast.POSITION.TOP_RIGHT,
       theme: "dark",
-      duration: 2000,
     });
     console.log("¡Archivo sobrescrito exitosamente!");
   } catch (error) {

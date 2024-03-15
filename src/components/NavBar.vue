@@ -132,6 +132,8 @@ import { useRouter } from "vue-router";
 import { invoke } from "@tauri-apps/api";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { open, save } from "@tauri-apps/api/dialog";
+import { toast } from "vue3-toastify";
+import "vue3-toastify/dist/index.css";
 
 const store = useStore();
 const router = useRouter();
@@ -172,7 +174,6 @@ const DeleteFile = async () => {
     toast.success("File succesfuly deleted", {
       position: toast.POSITION.TOP_RIGHT,
       theme: "dark",
-      duration: 2000,
     });
   } catch (error) {
     console.error("Error al intentar eliminar el archivo:", error);
@@ -198,7 +199,6 @@ const saveFileContents = async () => {
     toast.success("File saved succesfuly", {
       position: toast.POSITION.TOP_RIGHT,
       theme: "dark",
-      duration: 2000,
     });
   } catch (error) {
     console.error("Error al intentar sobrescribir el archivo:", error);
