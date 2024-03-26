@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex flex-col w-full h-full z-10 flex-1 min-w-full overflow-hidden flex-grow-0"
-  >
+  <div class="flex flex-col w-full h-full z-10 flex-1 min-w-full overflow-hidden flex-grow-0">
     <div class="flex w-full h-full min-w-full overflow-hidden flex-grow-0">
       <Codemirror
         :value="code"
@@ -16,7 +14,7 @@
       <div class="">
         <nav class="">
           <!-- Ajuste de margen superior y lateral -->
-          <ul class="flex bg-black min-h-full text-green-400 flex-20">
+          <ul class="flex bg-black min-h-full text-green-400 flex-20 overflow-y-auto">
             <li class="border border-white p-2">
               <router-link to="/analizer/lexic" class="hover:text-gray-300"
                 >Lexic</router-link
@@ -39,7 +37,9 @@
             </li>
           </ul>
         </nav>
-        <Analizers />
+        <div class="w-full h-full overflow-y-auto">
+          <Analizers />
+        </div>
       </div>
     </div>
     <Terminal class="w-full" />

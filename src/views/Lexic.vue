@@ -32,21 +32,25 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri';
 import { ref, onMounted } from 'vue';
+import { useStore } from "../stores/useStore";
 
+const store = useStore();
 const tokens = ref<string[][]>([]);
+const contents = ref(store.contents);
 
 const fetchTokens = async (content: string) => {
   try {
-    const response = await invoke('lexic', { content });
-    tokens.value = response;
+    console.log(content);
+    const response = await invoke('lexic', { content: content }); // Pass the content as an object
+    tokens.value = response as string[][];
   } catch (error) {
     console.error('Error fetching tokens:', error);
   }
 };
 
 onMounted(() => {
-  // Aquí deberías obtener el contenido del archivo y pasarlo a la función fetchTokens
-  const content = "..." // Obtener el contenido del archivo
+  // Obtener el contenido del archivo y pasarlo a la función fetchTokens
+  const content = contents.value; // Obtener el valor de contents
   fetchTokens(content);
 });
 </script>
