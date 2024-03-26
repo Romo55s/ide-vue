@@ -1,5 +1,8 @@
 <template>
-  <div class="flex flex-col w-full h-full z-10 flex-1 min-w-full overflow-hidden flex-grow-0">
+  <div
+    class="flex flex-col w-full h-full z-10 flex-1 min-w-full overflow-hidden flex-grow-0"
+  >
+    <div class="flex w-full h-full min-w-full overflow-hidden flex-grow-0">
       <Codemirror
         :value="code"
         :options="cmOptions"
@@ -8,13 +11,43 @@
         @change="onChange"
         @input="onInput"
         @ready="onReady"
-        @cursorActivity="onCursorActivity" 
+        @cursorActivity="onCursorActivity"
       />
-    <Terminal class="w-full"/>
+      <div class="">
+        <nav class="">
+          <!-- Ajuste de margen superior y lateral -->
+          <ul class="flex bg-black min-h-full text-green-400 flex-20">
+            <li class="border border-white p-2">
+              <router-link to="/analizer/lexic" class="hover:text-gray-300"
+                >Lexic</router-link
+              >
+            </li>
+            <li class="border border-white p-2">
+              <router-link to="/analizer/errors" class="hover:text-gray-300"
+                >Errors</router-link
+              >
+            </li>
+            <li class="border border-white p-2">
+              <router-link to="/analizer/semantic" class="hover:text-gray-300"
+                >Semantic</router-link
+              >
+            </li>
+            <li class="border border-white p-2">
+              <router-link to="/analizer/syntax" class="hover:text-gray-300"
+                >Syntax</router-link
+              >
+            </li>
+          </ul>
+        </nav>
+        <Analizers />
+      </div>
+    </div>
+    <Terminal class="w-full" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { Lexic, Errors, Semantic, Syntax } from "../views";
 import Terminal from "./Terminal.vue";
 import {
   ref,
@@ -36,6 +69,7 @@ import "codemirror/lib/codemirror.css";
 import "codemirror/theme/night.css";
 import "codemirror/theme/material-darker.css"; // Import the dark theme
 import { useStore } from "../stores/useStore";
+import Analizers from "../views/Analizers.vue";
 
 const store = useStore();
 const contents = ref(store.contents);
@@ -65,19 +99,13 @@ const code = computed(() => store.contents);
 
 const onChange = (val: string, cm: Editor) => {
   store.setContents(cm.getValue());
-
 };
 
 const onInput = (val: string) => {
   store.setContents(val);
-
 };
 
-const onReady = (cm: Editor) => {
-
-};
-
-
+const onReady = (cm: Editor) => {};
 
 onMounted(() => {
   setTimeout(() => {
