@@ -120,8 +120,9 @@ fn reserved_lookup(s: &str) -> TokenType {
 }
 
 // Función para realizar el análisis léxico y devolver los tokens
-fn get_token(content: &str) -> Vec<(TokenType, String, usize, usize)> {
+fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(TokenType, String, usize, usize)>) {
     let mut tokens = Vec::new();
+    let mut errors = Vec::new();
     let mut lineno = 0;
     let mut state = StateType::Start;
     let mut token_string = String::new();
@@ -193,7 +194,7 @@ fn get_token(content: &str) -> Vec<(TokenType, String, usize, usize)> {
                         '\0' => {
                             state = StateType::EndFile;
                         }
-                        _ => tokens.push((TokenType::ERROR, c.to_string(), lineno, column_number)),
+                        _ => errors.push((TokenType::ERROR, c.to_string(), lineno, column_number)),
                     }
                 }
             }
@@ -243,7 +244,7 @@ fn get_token(content: &str) -> Vec<(TokenType, String, usize, usize)> {
             _ => (),
         }
     }
-    tokens
+    (tokens, errors)
 }
 #[tauri::command]
 fn lexic(content: String) -> Result<Vec<(TokenType, String, usize, usize)>, String> {
