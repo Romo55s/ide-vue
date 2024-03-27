@@ -130,7 +130,7 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
     let bufsize = content.len();
     let mut column_number = 1;
     while linepos <= bufsize {
-        column_number +=1;
+        column_number += 1;
         let c = get_next_char(content, &mut linepos, bufsize);
         match state {
             StateType::Start => {
@@ -202,20 +202,20 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
                 if c.is_ascii_alphanumeric() || c == '_' {
                     token_string.push(c);
                 } else {
-                    tokens.push((reserved_lookup(&token_string), token_string.clone(), lineno, column_number));
+                    tokens.push((reserved_lookup(&token_string), token_string.clone(), lineno, column_number - token_string.len()));
                     token_string.clear();
                     state = StateType::Start;
-                    continue; // Seguir con el siguiente carácter en la misma iteración
+                    unget_next_char(&mut linepos); // Retornar un carácter
                 }
             }
             StateType::InNum => {
                 if c.is_digit(10) || c == '.' {
                     token_string.push(c);
                 } else {
-                    tokens.push((TokenType::NumInt, token_string.clone(), lineno, column_number));
+                    tokens.push((TokenType::NumInt, token_string.clone(), lineno, column_number - token_string.len()));
                     token_string.clear();
                     state = StateType::Start;
-                    continue; // Seguir con el siguiente carácter en la misma iteración
+                    unget_next_char(&mut linepos); // Retornar un carácter
                 }
             }
             StateType::InComment => {
@@ -239,7 +239,7 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
             }
             StateType::EndFile => {
                 tokens.push((TokenType::ENDFILE, "\0".to_string(), lineno, column_number));
-                break; // Salir del bucle mientras
+                break; // Salir del bucle while
             }
             _ => (),
         }
