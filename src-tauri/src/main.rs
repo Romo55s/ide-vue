@@ -140,7 +140,7 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
                 }
                 if c.is_whitespace() {
                     // Ignorar espacios en blanco
-                } else if c.is_ascii_alphabetic() {
+                } else if c.is_ascii_alphabetic() || c == '_'{
                     state = StateType::InId;
                     token_string.push(c);
                 } else if c.is_digit(10) {
