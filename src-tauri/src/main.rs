@@ -278,7 +278,10 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
 }
 #[tauri::command]
 fn lexic(content: String) -> Result<(Vec<(TokenType, String, usize, usize)>, Vec<(TokenType, String, usize, usize)>), String> {
-    Ok(get_token(&content))
+    match lexics(&content) {
+        Ok(()) => Ok(()),
+        Err(e) => Err(format!("Error al tokenizar: {}", e)),
+    }
 }
 
 fn main() {
