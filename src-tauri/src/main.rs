@@ -158,7 +158,24 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
                     }
                 } else {
                     match c {
-                        '=' => tokens.push((TokenType::EQ, "=".to_string(), lineno, column_number)),
+                        '=' => {
+                            let next_char = get_next_char(content, &mut linepos, bufsize);
+                            if next_char == '=' {
+                                tokens.push((TokenType::EQ, "==".to_string(), lineno, column_number));
+                            } else {
+                                tokens.push((TokenType::ASSIGN, "=".to_string(), lineno, column_number));
+                                unget_next_char(&mut linepos);
+                            }
+                        }
+                        '!' => {
+                            let next_char = get_next_char(content, &mut linepos, bufsize);
+                            if next_char == '=' {
+                                tokens.push((TokenType::NEQ, "!=".to_string(), lineno, column_number));
+                            } else {
+                                errors.push((TokenType::ERROR, "!".to_string(), lineno, column_number));
+                                unget_next_char(&mut linepos);
+                            }
+                        }
                         '<' => {
                             let next_char = get_next_char(content, &mut linepos, bufsize);
                             if next_char == '=' {
