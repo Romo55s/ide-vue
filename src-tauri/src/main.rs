@@ -123,7 +123,7 @@ fn reserved_lookup(s: &str) -> TokenType {
 fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(TokenType, String, usize, usize)>) {
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
-    let mut lineno = 0;
+    let mut lineno = 1;
     let mut state = StateType::Start;
     let mut token_string = String::new();
     let mut linepos = 0;
@@ -247,9 +247,10 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
     (tokens, errors)
 }
 #[tauri::command]
-fn lexic(content: String) -> Result<Vec<(TokenType, String, usize, usize)>, Vec<(TokenType, String, usize, usize)>> {
+fn lexic(content: String) -> Result<(Vec<(TokenType, String, usize, usize)>, Vec<(TokenType, String, usize, usize)>), String> {
     Ok(get_token(&content))
 }
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![save_file, remove_file, lexic])

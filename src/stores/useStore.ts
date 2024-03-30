@@ -13,6 +13,8 @@ export const useStore = defineStore({
     row: 0,
     flagEditor: false,
     flagSave: false,
+    errors: [] as string[][],
+    tokens: [] as string[][],
   }),
   actions: {
     toggleSidebar() {
@@ -39,6 +41,9 @@ export const useStore = defineStore({
     },
     setFlagSave(flag: boolean) {
       this.flagSave = flag;
+    },
+    setErrors(errors: string[][]) {
+      this.errors = errors;
     },
   },
 });

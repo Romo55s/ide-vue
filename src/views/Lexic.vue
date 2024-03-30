@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-black min-h-full flex justify-start items-center text-green-400 flex-20">
+  <div class="bg-neutral-950 min-h-full flex justify-start items-center text-green-400 flex-20">
     <div class="max-w-3xl p-8">
       <h1 class="text-4xl font-bold mb-4">Lexic</h1>
       <div v-if="tokens.length > 0">
@@ -42,7 +42,10 @@ const fetchTokens = async (content: string) => {
   try {
     console.log(content);
     const response = await invoke('lexic', { content: content }); // Pass the content as an object
-    tokens.value = response as string[][];
+    const [validTokens, errorTokens] = response as [string[][], string[][]];
+    console.log(response);
+    tokens.value = validTokens;
+    store.setErrors(errorTokens);
   } catch (error) {
     console.error('Error fetching tokens:', error);
   }
