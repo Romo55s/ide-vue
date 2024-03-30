@@ -226,10 +226,23 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
                 }
             }
             StateType::InNum => {
-                if c.is_digit(10) || c == '.' {
+                if c.is_digit(10) {
+                    token_string.push(c);
+                } else if c == '.' {
+                    state = StateType::InReal;
                     token_string.push(c);
                 } else {
                     tokens.push((TokenType::NumInt, token_string.clone(), lineno, column_number - token_string.len()));
+                    token_string.clear();
+                    state = StateType::Start;
+                    unget_next_char(&mut linepos); // Retornar un carácter
+                }
+            }
+            StateType::InReal => {
+                if c.is_digit(10) {
+                    token_string.push(c);
+                } else {
+                    tokens.push((TokenType::NumReal, token_string.clone(), lineno, column_number - token_string.len()));
                     token_string.clear();
                     state = StateType::Start;
                     unget_next_char(&mut linepos); // Retornar un carácter
