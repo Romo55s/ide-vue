@@ -78,40 +78,8 @@
             </li>
           </ul>
         </li>
-        <li
-          class="relative"
-          @mouseover="toggleDropdown('build', true)"
-          @mouseleave="toggleDropdown('build', false)"
-        >
-          <a href="#" class="block px-4 py-2 hover:bg-neutral-800"
-            >Build and Debug</a
-          >
-          <ul
-            v-if="showDropdown.build"
-            class="absolute top-auto left-0 bg-neutral-700 text-white shadow-md w-28"
-          >
-            <li>
-              <a href="/lexic" class="block px-4 py-2 hover:bg-neutral-800"
-                >Lexical</a
-              >
-            </li>
-            <li>
-              <a href="/syntactic" class="block px-4 py-2 hover:bg-neutral-800"
-                >Syntax</a
-              >
-            </li>
-            <li>
-              <a href="/semantic" class="block px-4 py-2 hover:bg-neutral-800"
-                >Semantic</a
-              >
-            </li>
-            <li>
-              <a href="/run" class="block px-4 py-2 hover:bg-neutral-800">Run</a>
-            </li>
-            <li>
-              <a href="/Errors" class="block px-4 py-2 hover:bg-neutral-800">Errors</a>
-            </li>
-          </ul>
+        <li>
+          <a href="/run" class="block px-4 py-2 hover:bg-neutral-800">Run</a>
         </li>
       </ul>
       <li
