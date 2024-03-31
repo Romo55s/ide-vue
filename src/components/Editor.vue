@@ -267,6 +267,7 @@ onUnmounted(() => {
 <style>
 .dark-theme .CodeMirror {
   background-color: #000000; /* Color de fondo oscuro */
+  color: white;
 }
 /* Estilos para resaltar números */
 .cm-number {
