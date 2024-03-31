@@ -12,35 +12,63 @@
         @input="onInput"
         @ready="onReady"
         @cursorActivity="onCursorActivity"
+        class="dark-theme"
       />
-      <div class="">
-        <nav class="">
-          <ul
-            class="flex bg-neutral-950 min-h-full text-green-400 w-full overflow-y-auto"
-          >
-            <li class="border border-white p-2">
-              <router-link to="/analizer/lexic" class="hover:text-gray-300"
-                >Lexic</router-link
+      <div class="font-consolas">
+        <nav
+          class="flex min-w-full bg-neutral-950 text-white w-full overflow-y-auto"
+        >
+          <ul class="flex w-full">
+            <!-- Agrega la clase w-full para que los botones abarquen todo el ancho -->
+            <!-- Botones para recargar rutas -->
+            <li v-if="store.errors.length > 0" class="flex-1 border border-white p-2">
+              <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
+              <button
+                @click="reloadRoute('/analizer/errors')"
+                class="hover:text-gray-300 flex flex-col items-center w-full"
               >
+                <i class="fas fa-triangle-exclamation"></i>
+                <!-- Icono de error -->
+                Errors
+              </button>
             </li>
-            <li class="border border-white p-2">
-              <router-link to="/analizer/errors" class="hover:text-gray-300"
-                >Errors</router-link
+            <li class="flex-1 border border-white p-2">
+              <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
+              <button
+                @click="reloadRoute('/analizer/lexic')"
+                class="hover:text-gray-300 flex flex-col items-center w-full"
               >
+                <i class="fas fa-language"></i>
+                <!-- Icono de léxico -->
+                Lexical
+              </button>
             </li>
-            <li class="border border-white p-2">
-              <router-link to="/analizer/semantic" class="hover:text-gray-300"
-                >Semantic</router-link
+            <li class="flex-1 border border-white p-2">
+              <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
+              <button
+                @click="reloadRoute('/analizer/syntax')"
+                class="hover:text-gray-300 flex flex-col items-center w-full"
               >
+                <i class="fas fa-puzzle-piece"></i>
+                <!-- Icono de sintaxis -->
+                Syntax
+              </button>
             </li>
-            <li class="border border-white p-2">
-              <router-link to="/analizer/syntax" class="hover:text-gray-300"
-                >Syntax</router-link
+            <li class="flex-1 border border-white p-2">
+              <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
+              <button
+                @click="reloadRoute('/analizer/semantic')"
+                class="hover:text-gray-300 flex flex-col items-center w-full"
               >
+                <i class="fas fa-atom"></i>
+                <!-- Icono de semántica -->
+                Semantic
+              </button>
             </li>
           </ul>
         </nav>
-        <div class="w-full h-full overflow-y-auto">
+
+        <div class="w-full h-full overflow-y-auto overflow-x-auto">
           <Analizers />
         </div>
       </div>
@@ -59,21 +87,33 @@ import {
   type ComputedRef,
   watch,
 } from "vue";
-import "codemirror/mode/javascript/javascript.js";
-import "codemirror/keymap/sublime.js";
 import Codemirror from "codemirror-editor-vue3";
 import type { CmComponentRef } from "codemirror-editor-vue3";
 import type { Editor, EditorConfiguration } from "codemirror";
-import "codemirror/mode/javascript/javascript.js";
-import "codemirror/addon/hint/show-hint.js"; // Importa el addon para el autocompletado
-import "codemirror/addon/hint/javascript-hint.js"; // Importa el addon para el autocompletado de JavaScript
 import "codemirror/lib/codemirror.css";
-import "codemirror/theme/night.css";
-import "codemirror/theme/material-darker.css"; // Import the dark theme
+
 import { useStore } from "../stores/useStore";
 import Analizers from "../views/Analizers.vue";
 import { defineMode } from "codemirror";
+import { useRouter } from "vue-router";
 
+// Obtenemos el enrutador
+const router = useRouter();
+
+// Función para recargar la ruta actual
+const reloadRoute = (path) => {
+  // Obtenemos la ruta actual
+  const currentRoute = router.currentRoute.value.path;
+
+  // Verificamos si la ruta actual es igual a la ruta que se intenta recargar
+  if (currentRoute === path) {
+    // Forzamos la recarga de la ruta actual
+    router.replace({ path: path });
+  } else {
+    // Redirigimos a la ruta especificada
+    router.push({ path: path });
+  }
+};
 const store = useStore();
 const contents = ref(store.contents);
 console.log(contents.value);
@@ -184,10 +224,6 @@ defineMode("customMode", () => {
 
 const cmOptions: EditorConfiguration = {
   mode: "customMode",
-  keyMap: "sublime",
-  extraKeys: {
-    "Ctrl-Space": "autocomplete",
-  },
 };
 
 const sidebarWidth = computed(() => store.sidebarWidth);
@@ -229,28 +265,32 @@ onUnmounted(() => {
 </script>
 
 <style>
+.dark-theme .CodeMirror {
+  background-color: #000000; /* Color de fondo oscuro */
+  color: white;
+}
 /* Estilos para resaltar números */
 .cm-number {
-  color: blue !important; /* Color azul para números */
+  color: #0f80f1 !important; /* Azul */
 }
 
 /* Estilos para resaltar identificadores */
 .cm-variable {
-  color: green !important; /* Color verde para identificadores */
+  color: #6a42d7 !important; /* Morado */
 }
 
 /* Estilos para resaltar comentarios */
 .cm-comment {
-  color: gray !important; /* Color gris para comentarios */
+  color: #333333 !important; /* Gris Oscuro */
 }
 
 /* Estilos para resaltar palabras reservadas */
 .cm-keyword {
-  color: purple !important; /* Color morado para palabras reservadas */
+  color: #f50097 !important; /* Rosa */
 }
 
 /* Estilos para resaltar operadores */
 .cm-operator {
-  color: orange !important; /* Color naranja para operadores */
+  color: #ffa500 !important; /* Naranja */
 }
 </style>

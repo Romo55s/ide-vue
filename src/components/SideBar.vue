@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-neutral-950 text-white p-0.5 ease-out duration-100 flex flex-col h-full"
+    class="bg-neutral-950 text-white p-0.5 ease-out duration-100 flex flex-col h-full font-consolas"
     :style="{ width: sidebarWidth }"
   >
     <div class="flex justify-center mt-8 items-center">
@@ -14,7 +14,7 @@
       to="/editor"
       icon="fa-regular fa-file"
       title="New File"
-      @click="NewFile"
+      @click="NewFile" class="small-text"
       >New file</SideBarLink
     >
     <SideBarLink
@@ -22,14 +22,14 @@
       icon="fa-regular fa-trash-can"
       title="Delete file"
       v-if="store.flagSave"
-      @click="DeleteFile"
+      @click="DeleteFile" class="small-text"
       >Delete file</SideBarLink
     >
     <SideBarLink
       to=""
       icon="fa-regular fa-folder-open"
       title="Open file"
-      @click="readFileContents"
+      @click="readFileContents" class="small-text"
       >Open file</SideBarLink
     >
     <SideBarLink
@@ -37,17 +37,17 @@
       icon="fa-regular fa-save"
       title="Save"
       @click="saveFileContents"
-      v-if="!store.flagNewFile"
+      v-if="!store.flagNewFile" class="small-text"
       >Save</SideBarLink
     >
     <SideBarLink
       to=""
       icon="fa-regular fa-pen-to-square"
       title="Save as"
-      @click="saveAsFileContents"
+      @click="saveAsFileContents" class="small-text"
       >Save as</SideBarLink
     >
-    <SideBarLink to="" icon="fa-solid fa-play" title="Run">Run</SideBarLink>
+    <SideBarLink to="" icon="fa-solid fa-play" title="Run" class="small-text">Run</SideBarLink>
     <span
       class="absolute bottom-0 p-4 color-white ease-linear duration-200"
       @click="toggleSideBar"
@@ -190,3 +190,8 @@ const toggleSideBar = () => {
 const sidebarWidth = computed(() => store.sidebarWidth);
 const collapsed = computed(() => store.collapsed);
 </script>
+<style>
+.small-text {
+    font-size: 0.90rem;
+  }
+</style>

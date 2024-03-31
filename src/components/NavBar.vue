@@ -1,7 +1,7 @@
 <template>
-  <header class="bg-neutral-950 z-50 w-full flex-0 text-white sticky h-12">
+  <header class="bg-neutral-950 z-50 w-full flex-0 text-white sticky h-12 font-consolas">
     <nav class="flex justify-between p-2 w-full flex-row">
-      <ul class="font-bold text-white text-xs flex space-x-4">
+      <ul class="text-white text-xs flex space-x-4">
         <li
           class="relative"
           @mouseover="toggleDropdown('file', true)"

@@ -45,5 +45,8 @@ export const useStore = defineStore({
     setErrors(errors: string[][]) {
       this.errors = errors;
     },
+    setTokens(tokens: string[][]) {
+      this.tokens = tokens;
+    }
   },
 });
