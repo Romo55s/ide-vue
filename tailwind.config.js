@@ -5,6 +5,9 @@ module.exports = {
       height: {
         '41': '10.05rem',
       },
+      fontFamily: {
+        'consolas': ['Consolas', 'monospace'],
+      },
     },
   },
   plugins: [],

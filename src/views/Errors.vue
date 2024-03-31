@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-neutral-950 min-h-full flex justify-start items-center text-green-400 flex-20">
+  <div class="bg-neutral-950 min-h-full flex justify-start items-center text-white flex-20">
     <div class="max-w-3xl p-8">
       <h1 class="text-4xl font-bold mb-4">Errors</h1>
       <div v-if="error.length > 0">
@@ -50,12 +50,12 @@ const fetchTokens = async (content: string) => {
     console.error('Error fetching tokens:', error);
   }
 };
-  
+
 onMounted(() => {
   fetchTokens(contents.value);
 });
 </script>
 
 <style scoped>
-/* Add any additional styling using Tailwind CSS classes */
+
 </style>

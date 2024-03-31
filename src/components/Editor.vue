@@ -13,9 +13,9 @@
         @ready="onReady"
         @cursorActivity="onCursorActivity"
       />
-      <div class="">
+      <div class="font-consolas">
         <nav
-          class="flex min-w-full bg-neutral-950 text-green-400 w-full overflow-y-auto"
+          class="flex min-w-full bg-neutral-950 text-white w-full overflow-y-auto"
         >
           <ul class="flex">
             <!-- Botones para recargar rutas -->
@@ -24,7 +24,7 @@
                 @click="reloadRoute('/analizer/lexic')"
                 class="hover:text-gray-300"
               >
-                Lelexic
+                Lexical
               </button>
             </li>
             <li class="border border-white p-2">
@@ -262,26 +262,27 @@ onUnmounted(() => {
 <style>
 /* Estilos para resaltar números */
 .cm-number {
-  color: blue !important; /* Color azul para números */
+  color: #0f80f1 !important; /* Azul Oscuro */
 }
 
 /* Estilos para resaltar identificadores */
 .cm-variable {
-  color: green !important; /* Color verde para identificadores */
+  color: #2b029b !important; /* Verde Oscuro */
 }
 
 /* Estilos para resaltar comentarios */
 .cm-comment {
-  color: gray !important; /* Color gris para comentarios */
+  color: #333333 !important; /* Gris Oscuro */
 }
 
 /* Estilos para resaltar palabras reservadas */
 .cm-keyword {
-  color: purple !important; /* Color morado para palabras reservadas */
+  color: #f50097 !important; /* Morado */
 }
 
 /* Estilos para resaltar operadores */
 .cm-operator {
-  color: orange !important; /* Color naranja para operadores */
+  color: #FFA500 !important; /* Naranja */
 }
+
 </style>

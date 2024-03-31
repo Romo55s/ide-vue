@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="bg-neutral-950 min-h-full w-full flex justify-start items-center text-green-400 flex-20"
-  >
+  <div class="bg-neutral-900 min-h-full w-full flex justify-start items-center text-white flex-20 code-mirror-table">
     <div class="max-w-3xl p-8">
       <h1 class="text-4xl font-bold mb-4">Lexic</h1>
       <div v-if="tokens.length > 0">
@@ -15,11 +13,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="(token, index) in tokens"
-              :key="index"
-              class="border-t border-green-400"
-            >
+            <tr v-for="(token, index) in tokens" :key="index" :class="getTokenClass(token[0])">
               <td class="px-4 py-2">{{ token[0] }}</td>
               <td class="px-4 py-2">{{ token[1] }}</td>
               <td class="px-4 py-2">{{ token[2] }}</td>
@@ -35,6 +29,7 @@
   </div>
 </template>
 
+
 <script setup lang="ts">
 import { invoke } from "@tauri-apps/api/tauri";
 import { ref, onMounted } from "vue";
@@ -46,23 +41,103 @@ const contents = ref<string>(store.contents);
 
 const fetchTokens = async (content: string) => {
   try {
-    console.log(content);
-    const response = await invoke("lexic", { content: content }); // Pass the content as an object
+    const response = await invoke("lexic", { content: content });
     const [validTokens, errorTokens] = response as [string[][], string[][]];
-    console.log("response ->", response);
     store.setTokens(validTokens);
-    tokens.value = validTokens; // Assign the updated value directly to tokens
-    console.log("store.tokens ->", store.tokens);
+    tokens.value = validTokens;
   } catch (error) {
     console.error("Error fetching tokens:", error);
   }
 };
+
+const getTokenClass = (tokenType: string) => {
+  switch (tokenType) {
+    case "number":
+    case "NumInt":
+    case "NumReal":
+      return "token-number";
+    case "ID":
+      return "token-variable";
+    case "InMultipleComment":
+    case "InComment":
+      return "token-comment";
+    case "IF":
+    case "ELSE":
+    case "DO":
+    case "WHILE":
+    case "SWITCH":
+    case "CASE":
+    case "END":
+    case "REPEAT":
+    case "UNTIL":
+    case "READ":
+    case "WRITE":
+    case "INTEGER":
+    case "DOUBLE":
+    case "MAIN":
+    case "AND":
+    case "OR":
+    case "RETURN":
+      return "token-keyword";
+    case "PLUS":
+    case "MINUS":
+    case "TIMES":
+    case "DIVIDE":
+    case "MODULO":
+    case "POWER":
+    case "EQ":
+    case "NEQ":
+    case "LT":
+    case "LTE":
+    case "GT":
+    case "GTE":
+    case "LPAREN":
+    case "RPAREN":
+    case "LBRACE":
+    case "RBRACE":
+    case "COMMA":
+    case "SEMICOLON":
+    case "ASSIGN":
+      return "token-operator";
+    default:
+      return "";
+  }
+};
+
 
 onMounted(() => {
   fetchTokens(contents.value);
 });
 </script>
 
+
+
 <style scoped>
-/* Add any additional styling using Tailwind CSS classes */
+.code-mirror-table {
+  font-family: consolas !important;
+}
+/* Estilos para resaltar números */
+.token-number {
+  color: #0f80f1 !important; /* Azul Oscuro */
+}
+
+/* Estilos para resaltar identificadores */
+.token-variable {
+  color: #2b029b !important; /* Verde Oscuro */
+}
+
+/* Estilos para resaltar comentarios */
+.token-comment {
+  color: #333333 !important; /* Gris Oscuro */
+}
+
+/* Estilos para resaltar palabras reservadas */
+.token-keyword {
+  color: #f50097 !important; /* Morado */
+}
+
+/* Estilos para resaltar operadores */
+.token-operator {
+  color: #FFA500 !important; /* Naranja */
+}
 </style>
