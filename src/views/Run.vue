@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-neutral-900 flex min-h-screen justify-center items-center text-white">
+    <div class="bg-neutral-900 flex min-h-screen justify-center items-center text-white font-consolas">
       <div class="max-w-3xl p-8">
         <h1 class="text-4xl font-bold mb-4">Run</h1>
         <div v-if="errors.length > 0">

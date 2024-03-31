@@ -12,47 +12,62 @@
         @input="onInput"
         @ready="onReady"
         @cursorActivity="onCursorActivity"
+        class="dark-theme"
       />
       <div class="font-consolas">
         <nav
           class="flex min-w-full bg-neutral-950 text-white w-full overflow-y-auto"
         >
-          <ul class="flex">
+          <ul class="flex w-full">
+            <!-- Agrega la clase w-full para que los botones abarquen todo el ancho -->
             <!-- Botones para recargar rutas -->
-            <li class="border border-white p-2">
-              <button
-                @click="reloadRoute('/analizer/lexic')"
-                class="hover:text-gray-300"
-              >
-                Lexical
-              </button>
-            </li>
-            <li class="border border-white p-2">
+            <li v-if="store.errors.length > 0" class="flex-1 border border-white p-2">
+              <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
               <button
                 @click="reloadRoute('/analizer/errors')"
-                class="hover:text-gray-300"
+                class="hover:text-gray-300 flex flex-col items-center w-full"
               >
+                <i class="fas fa-triangle-exclamation"></i>
+                <!-- Icono de error -->
                 Errors
               </button>
             </li>
-            <li class="border border-white p-2">
+            <li class="flex-1 border border-white p-2">
+              <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
               <button
-                @click="reloadRoute('/analizer/semantic')"
-                class="hover:text-gray-300"
+                @click="reloadRoute('/analizer/lexic')"
+                class="hover:text-gray-300 flex flex-col items-center w-full"
               >
-                Semantic
+                <i class="fas fa-language"></i>
+                <!-- Icono de léxico -->
+                Lexical
               </button>
             </li>
-            <li class="border border-white p-2">
+            <li class="flex-1 border border-white p-2">
+              <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
               <button
                 @click="reloadRoute('/analizer/syntax')"
-                class="hover:text-gray-300"
+                class="hover:text-gray-300 flex flex-col items-center w-full"
               >
+                <i class="fas fa-puzzle-piece"></i>
+                <!-- Icono de sintaxis -->
                 Syntax
+              </button>
+            </li>
+            <li class="flex-1 border border-white p-2">
+              <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
+              <button
+                @click="reloadRoute('/analizer/semantic')"
+                class="hover:text-gray-300 flex flex-col items-center w-full"
+              >
+                <i class="fas fa-atom"></i>
+                <!-- Icono de semántica -->
+                Semantic
               </button>
             </li>
           </ul>
         </nav>
+
         <div class="w-full h-full overflow-y-auto overflow-x-auto">
           <Analizers />
         </div>
@@ -72,17 +87,11 @@ import {
   type ComputedRef,
   watch,
 } from "vue";
-import "codemirror/mode/javascript/javascript.js";
-import "codemirror/keymap/sublime.js";
 import Codemirror from "codemirror-editor-vue3";
 import type { CmComponentRef } from "codemirror-editor-vue3";
 import type { Editor, EditorConfiguration } from "codemirror";
-import "codemirror/mode/javascript/javascript.js";
-import "codemirror/addon/hint/show-hint.js"; // Importa el addon para el autocompletado
-import "codemirror/addon/hint/javascript-hint.js"; // Importa el addon para el autocompletado de JavaScript
 import "codemirror/lib/codemirror.css";
-import "codemirror/theme/night.css";
-import "codemirror/theme/material-darker.css"; // Import the dark theme
+
 import { useStore } from "../stores/useStore";
 import Analizers from "../views/Analizers.vue";
 import { defineMode } from "codemirror";
@@ -215,10 +224,6 @@ defineMode("customMode", () => {
 
 const cmOptions: EditorConfiguration = {
   mode: "customMode",
-  keyMap: "sublime",
-  extraKeys: {
-    "Ctrl-Space": "autocomplete",
-  },
 };
 
 const sidebarWidth = computed(() => store.sidebarWidth);
@@ -260,14 +265,17 @@ onUnmounted(() => {
 </script>
 
 <style>
+.dark-theme .CodeMirror {
+  background-color: #000000; /* Color de fondo oscuro */
+}
 /* Estilos para resaltar números */
 .cm-number {
-  color: #0f80f1 !important; /* Azul Oscuro */
+  color: #0f80f1 !important; /* Azul */
 }
 
 /* Estilos para resaltar identificadores */
 .cm-variable {
-  color: #2b029b !important; /* Verde Oscuro */
+  color: #6a42d7 !important; /* Morado */
 }
 
 /* Estilos para resaltar comentarios */
@@ -277,12 +285,11 @@ onUnmounted(() => {
 
 /* Estilos para resaltar palabras reservadas */
 .cm-keyword {
-  color: #f50097 !important; /* Morado */
+  color: #f50097 !important; /* Rosa */
 }
 
 /* Estilos para resaltar operadores */
 .cm-operator {
-  color: #FFA500 !important; /* Naranja */
+  color: #ffa500 !important; /* Naranja */
 }
-
 </style>

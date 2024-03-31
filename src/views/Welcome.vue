@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-neutral-900 min-h-full flex justify-center items-center text-white"
+    class="bg-neutral-900 min-h-full flex justify-center items-center text-white font-consolas"
   >
     <div class="max-w-3xl p-8">
       <h1 class="text-4xl font-bold mb-4">Welcome to Luven IDE</h1>

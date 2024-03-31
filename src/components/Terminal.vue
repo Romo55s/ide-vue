@@ -1,7 +1,7 @@
 <template>
   <div
     ref="terminal"
-    class="h-41 w-full bg-neutral-900 text-white p-4 overflow-y-auto border-t-8 border-neutral-950"
+    class="h-41 w-full bg-neutral-900 text-white p-4 overflow-y-auto border-t-8 border-neutral-950 font-consolas"
   >
     <div class="mb-2">
       <span class="text-green-400">usuario@host:</span>
