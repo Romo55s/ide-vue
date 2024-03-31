@@ -14,33 +14,46 @@
         @cursorActivity="onCursorActivity"
       />
       <div class="">
-        <nav class="">
-          <ul
-            class="flex bg-neutral-950 min-h-full text-green-400 w-full overflow-y-auto"
-          >
+        <nav
+          class="flex min-w-full bg-neutral-950 text-green-400 w-full overflow-y-auto"
+        >
+          <ul class="flex">
+            <!-- Botones para recargar rutas -->
             <li class="border border-white p-2">
-              <router-link to="/analizer/lexic" class="hover:text-gray-300"
-                >Lexic</router-link
+              <button
+                @click="reloadRoute('/analizer/lexic')"
+                class="hover:text-gray-300"
               >
+                Lelexic
+              </button>
             </li>
             <li class="border border-white p-2">
-              <router-link to="/analizer/errors" class="hover:text-gray-300"
-                >Errors</router-link
+              <button
+                @click="reloadRoute('/analizer/errors')"
+                class="hover:text-gray-300"
               >
+                Errors
+              </button>
             </li>
             <li class="border border-white p-2">
-              <router-link to="/analizer/semantic" class="hover:text-gray-300"
-                >Semantic</router-link
+              <button
+                @click="reloadRoute('/analizer/semantic')"
+                class="hover:text-gray-300"
               >
+                Semantic
+              </button>
             </li>
             <li class="border border-white p-2">
-              <router-link to="/analizer/syntax" class="hover:text-gray-300"
-                >Syntax</router-link
+              <button
+                @click="reloadRoute('/analizer/syntax')"
+                class="hover:text-gray-300"
               >
+                Syntax
+              </button>
             </li>
           </ul>
         </nav>
-        <div class="w-full h-full overflow-y-auto">
+        <div class="w-full h-full overflow-y-auto overflow-x-auto">
           <Analizers />
         </div>
       </div>
@@ -73,7 +86,25 @@ import "codemirror/theme/material-darker.css"; // Import the dark theme
 import { useStore } from "../stores/useStore";
 import Analizers from "../views/Analizers.vue";
 import { defineMode } from "codemirror";
+import { useRouter } from "vue-router";
 
+// Obtenemos el enrutador
+const router = useRouter();
+
+// Función para recargar la ruta actual
+const reloadRoute = (path) => {
+  // Obtenemos la ruta actual
+  const currentRoute = router.currentRoute.value.path;
+
+  // Verificamos si la ruta actual es igual a la ruta que se intenta recargar
+  if (currentRoute === path) {
+    // Forzamos la recarga de la ruta actual
+    router.replace({ path: path });
+  } else {
+    // Redirigimos a la ruta especificada
+    router.push({ path: path });
+  }
+};
 const store = useStore();
 const contents = ref(store.contents);
 console.log(contents.value);

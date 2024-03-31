@@ -50,11 +50,9 @@ const fetchTokens = async (content: string) => {
     console.error('Error fetching tokens:', error);
   }
 };
-
+  
 onMounted(() => {
-  // Obtener el contenido del archivo y pasarlo a la función fetchTokens
-  const content = contents.value; // Obtener el valor de contents
-  fetchTokens(content);
+  fetchTokens(contents.value);
 });
 </script>
 
