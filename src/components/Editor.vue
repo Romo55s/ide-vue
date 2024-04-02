@@ -35,7 +35,7 @@
             <li class="flex-1 border border-white p-2">
               <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
               <button
-                @click="reloadRoute('/analizer/lexic')"
+                @click="fetchTokens(code)"
                 class="hover:text-gray-300 flex flex-col items-center w-full"
               >
                 <i class="fas fa-language"></i>
@@ -84,8 +84,6 @@ import {
   onMounted,
   onUnmounted,
   computed,
-  type ComputedRef,
-  watch,
 } from "vue";
 import Codemirror from "codemirror-editor-vue3";
 import type { CmComponentRef } from "codemirror-editor-vue3";
@@ -96,6 +94,7 @@ import { useStore } from "../stores/useStore";
 import Analizers from "../views/Analizers.vue";
 import { defineMode } from "codemirror";
 import { useRouter } from "vue-router";
+import { invoke } from "@tauri-apps/api/tauri";
 
 // Obtenemos el enrutador
 const router = useRouter();
@@ -115,11 +114,20 @@ const reloadRoute = (path) => {
   }
 };
 const store = useStore();
-const contents = ref(store.contents);
-console.log(contents.value);
-const message = ref("");
 const cmRef = ref<CmComponentRef>();
 store.setFlagEditor(true);
+
+const fetchTokens = async (content: string) => {
+  try {
+    const response = await invoke("lexic", { content: content });
+    const [validTokens, errorTokens] = response as [string[][], string[][]];
+    store.setTokens(validTokens);
+    store.setErrors(errorTokens);
+    router.push("/analizer/lexic");
+  } catch (error) {
+    console.error("Error fetching tokens:", error);
+  }
+};
 
 defineMode("customMode", () => {
   return {
@@ -226,9 +234,6 @@ const cmOptions: EditorConfiguration = {
   mode: "customMode",
 };
 
-const sidebarWidth = computed(() => store.sidebarWidth);
-const isCollapsed = computed(() => store.collapsed);
-
 const onCursorActivity = (cm: Editor) => {
   const cursor = cm.getCursor(); // Get the current cursor position
   store.setColumn(cursor.ch); // Update the store with the current column
@@ -238,12 +243,10 @@ const onCursorActivity = (cm: Editor) => {
 const code = computed(() => store.contents);
 
 const onChange = (val: string, cm: Editor) => {
-  console.log("Editor content changed:", val); // Agregar esta línea
   store.setContents(cm.getValue());
 };
 
 const onInput = (val: string) => {
-  console.log("Editor input:", val); // Agregar esta línea
   store.setContents(val);
 };
 

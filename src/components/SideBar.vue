@@ -74,10 +74,6 @@ import "vue3-toastify/dist/index.css";
 const store = useStore();
 const router = useRouter();
 const contents = ref(store.contents);
-const paths = ref(store.paths);
-
-console.log("Contents from store:", contents.value);
-console.log("Paths from store:", paths.value);
 
 const NewFile = async () => {
   store.setFlagSave(false);
@@ -100,7 +96,6 @@ const DeleteFile = async () => {
 
     // Eliminar el archivo utilizando invoke con el comando remove_file
     await invoke("remove_file", { path: store.paths });
-    console.log("¡Archivo eliminado exitosamente!");
     toast.success("File succesfuly deleted", {
       position: toast.POSITION.TOP_RIGHT,
       theme: "dark",
@@ -139,7 +134,6 @@ const saveFileContents = async () => {
       position: toast.POSITION.TOP_RIGHT,
       theme: "dark",
     });
-    console.log("¡Archivo sobrescrito exitosamente!");
   } catch (error) {
     console.error("Error al intentar sobrescribir el archivo:", error);
   }
@@ -152,9 +146,7 @@ const saveAsFileContents = async () => {
       console.warn("No se seleccionó ningún archivo.");
       return;
     }
-    console.log(result);
     store.setPaths(result);
-    console.log(store.contents);
     store.setFlagNewFile(false);
     store.setFlagSave(true);
     await invoke("save_file", { path: result, contents: store.contents });
@@ -171,8 +163,6 @@ const readFileContents = async () => {
     });
     if (!selectedPath) return;
     contents.value = await readTextFile(selectedPath as string);
-    console.log(contents.value);
-    console.log(selectedPath);
     store.setContents(contents.value);
     store.setPaths(selectedPath as string);
     router.push("/editor");
