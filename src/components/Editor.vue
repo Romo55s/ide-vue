@@ -21,7 +21,10 @@
           <ul class="flex w-full">
             <!-- Agrega la clase w-full para que los botones abarquen todo el ancho -->
             <!-- Botones para recargar rutas -->
-            <li v-if="store.errors.length > 0" class="flex-1 border border-white p-2">
+            <li
+              v-if="store.errors.length > 0"
+              class="flex-1 border border-white p-2"
+            >
               <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
               <button
                 @click="reloadRoute('/analizer/errors')"
@@ -79,12 +82,7 @@
 
 <script setup lang="ts">
 import Terminal from "./Terminal.vue";
-import {
-  ref,
-  onMounted,
-  onUnmounted,
-  computed,
-} from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import Codemirror from "codemirror-editor-vue3";
 import type { CmComponentRef } from "codemirror-editor-vue3";
 import type { Editor, EditorConfiguration } from "codemirror";
@@ -217,10 +215,40 @@ defineMode("customMode", () => {
         return "comment"; // Usa una clase de estilo CSS "comment" para comentarios
       }
 
-      // Tokeniza operadores
-      const operator = stream.match(/^[+\-*/%^<>=!&,;(){}]/);
-      if (operator) {
-        return "operator"; // Usa una clase de estilo CSS "operator" para operadores
+      // Tokeniza operadores aritméticos
+      const arithmeticOperator = stream.match(/^[+\-*/%^]/);
+      if (arithmeticOperator) {
+        return "operator"; // Usa una clase de estilo CSS "operator" para operadores aritméticos
+      }
+
+      // Tokeniza paréntesis
+      const parenthesis = stream.match(/^[\(\)]/);
+      if (parenthesis) {
+        return "bracket"; // Usa una clase de estilo CSS "bracket" para paréntesis
+      }
+
+      // Tokeniza llaves
+      const brace = stream.match(/^[\{\}]/);
+      if (brace) {
+        return "brace"; // Usa una clase de estilo CSS "brace" para llaves
+      }
+
+      // Tokeniza operadores relacionales
+      const comparisonOperator = stream.match(/^(===|==|!==|!=|<=|>=|<|>|;)/);
+      if (comparisonOperator) {
+        return "comparison"; // Usa una clase de estilo CSS "comparison" para operadores relacionales
+      }
+
+      // Tokeniza símbolos
+      const symbol = stream.match(/^(&&|\|\|)/);
+      if (symbol) {
+        return "operator"; // Usa una clase de estilo CSS "operator" para operadores "and" y "or"
+      }
+
+      // Tokeniza operador de asignación
+      const assign = stream.match(/^=/);
+      if (assign) {
+        return "assign"; // Usa una clase de estilo CSS "assign" para el operador de asignación
       }
 
       // Avanza al siguiente token
@@ -269,9 +297,22 @@ onUnmounted(() => {
 
 <style>
 .dark-theme .CodeMirror {
-  background-color: #000000; /* Color de fondo oscuro */
+  background: #262626;
   color: white;
 }
+
+.CodeMirror .CodeMirror-cursor {
+  color: white !important;
+}
+
+.CodeMirror-cursor{
+  border-left: 1px solid white !important;
+}
+
+.CodeMirror-gutter {
+  background: #383838;
+}
+
 /* Estilos para resaltar números */
 .cm-number {
   color: #0f80f1 !important; /* Azul */
@@ -284,7 +325,7 @@ onUnmounted(() => {
 
 /* Estilos para resaltar comentarios */
 .cm-comment {
-  color: #333333 !important; /* Gris Oscuro */
+  color: #008000 !important; /* Verde */
 }
 
 /* Estilos para resaltar palabras reservadas */
@@ -295,5 +336,34 @@ onUnmounted(() => {
 /* Estilos para resaltar operadores */
 .cm-operator {
   color: #ffa500 !important; /* Naranja */
+}
+
+/* Estilos para resaltar operadores relacionales */
+.cm-operator {
+  color: #ff0800 !important; /* Rojo */
+}
+
+.cm-comparison{
+  color: #60f774 !important; /* Azul */
+}
+
+/* Estilos para resaltar símbolos */
+.cm-symbol {
+  color: #ffffff !important; /* Blanco */
+}
+
+/* Estilos para resaltar paréntesis */
+.cm-bracket {
+  color: #00ffff !important; /* Cyan */
+}
+
+/* Estilos para resaltar llaves */
+.cm-brace {
+  color: #ff00ff6e !important; /* Magenta */
+}
+
+/* Estilos para resaltar asignación */
+.cm-assign {
+  color: #f392eb !important; /* Rosa */
 }
 </style>
