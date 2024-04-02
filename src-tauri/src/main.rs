@@ -8,8 +8,8 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 enum TokenType {
     // Tokens de control
-    ENDFILE,
-    ERROR,
+    ENDFILE, //cierre de archivo
+    ERROR, //error - no hay tokens que coincidan
 
     // Palabras reservadas
     IF,
@@ -29,6 +29,8 @@ enum TokenType {
     AND,
     OR,
     RETURN,
+    CIN,
+    COUT,
 
     // Tokens de múltiples caracteres
     ID,
@@ -59,6 +61,12 @@ enum TokenType {
     COMMA,     // coma
     SEMICOLON, // punto y coma
     ASSIGN,    // asignación
+
+    //Incrementador
+    INCREMENT,
+    
+    //Decrementador
+    DECREMENT,
 
     // Símbolo de comentario múltiple no cerrado
     InMultipleComment,
@@ -115,6 +123,8 @@ fn reserved_lookup(s: &str) -> TokenType {
         "main" => TokenType::MAIN,
         "return" => TokenType::RETURN,
         "/*" => TokenType::InMultipleComment,
+        "cin" => TokenType::CIN,
+        "cout" => TokenType::COUT,
         _ => TokenType::ID,
     }
 }
@@ -215,8 +225,26 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
 
                             }
                         }
-                        '+' => tokens.push((TokenType::PLUS, "+".to_string(), lineno, column_number)),
-                        '-' => tokens.push((TokenType::MINUS, "-".to_string(), lineno, column_number)),
+                        '+' => {
+                            let next_char = get_next_char(content, &mut linepos, bufsize);
+                            if next_char == '+' {
+                                tokens.push((TokenType::INCREMENT, "++".to_string(), lineno, column_number - 1));
+                            } else {
+                                tokens.push((TokenType::PLUS, "+".to_string(), lineno, column_number - 1));
+                                unget_next_char(&mut linepos);
+
+                            }
+                        }
+                        '-' => {
+                            let next_char = get_next_char(content, &mut linepos, bufsize);
+                            if next_char == '-' {
+                                tokens.push((TokenType::DECREMENT, "--".to_string(), lineno, column_number - 1));
+                            } else {
+                                tokens.push((TokenType::MINUS, "-".to_string(), lineno, column_number - 1));
+                                unget_next_char(&mut linepos);
+
+                            }
+                        }
                         '*' => tokens.push((TokenType::TIMES, "*".to_string(), lineno, column_number)),
                         '%' => tokens.push((TokenType::MODULO, "%".to_string(), lineno, column_number)),
                         '^' => tokens.push((TokenType::POWER, "^".to_string(), lineno, column_number)),
@@ -256,17 +284,22 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
                     tokens.push((TokenType::NumInt, token_string.clone(), lineno, (column_number - 1)));
                     token_string.clear();
                     state = StateType::Start;
-                    unget_next_char(&mut linepos); // Retornar un caráct
+                    unget_next_char(&mut linepos); // Retornar un carácter
                 }
             }
             StateType::InReal => {
                 if c.is_digit(10) {
                     token_string.push(c);
+                } else if token_string.ends_with('.') {
+                    errors.push((TokenType::ERROR, token_string.clone(), lineno, (column_number - 1)));
+                    token_string.clear();
+                    state = StateType::Start;
+                    unget_next_char(&mut linepos); //retornar un carácter
                 } else {
                     tokens.push((TokenType::NumReal, token_string.clone(), lineno, (column_number - 1)));
                     token_string.clear();
                     state = StateType::Start;
-                    unget_next_char(&mut linepos); // Retornar un caráct
+                    unget_next_char(&mut linepos); // Retornar un carácter
                 }
             }
             StateType::InComment => {

@@ -315,36 +315,36 @@ onUnmounted(() => {
 
 /* Estilos para resaltar números */
 .cm-number {
-  color: #0f80f1 !important; /* Azul */
+  color: #3692ed !important; /* Azul */
 }
 
 /* Estilos para resaltar identificadores */
 .cm-variable {
-  color: #6a42d7 !important; /* Morado */
+  color: #8059ec !important; /* Morado */
 }
 
 /* Estilos para resaltar comentarios */
 .cm-comment {
-  color: #008000 !important; /* Verde */
+  color: #59e559 !important; /* Verde */
 }
 
 /* Estilos para resaltar palabras reservadas */
 .cm-keyword {
-  color: #f50097 !important; /* Rosa */
+  color: #ec4eb0 !important; /* Rosa */
 }
 
 /* Estilos para resaltar operadores */
 .cm-operator {
-  color: #ffa500 !important; /* Naranja */
+  color: #f0af37 !important; /* Naranja */
 }
 
 /* Estilos para resaltar operadores relacionales */
 .cm-operator {
-  color: #ff0800 !important; /* Rojo */
+  color: #ee5d58 !important; /* Rojo */
 }
 
 .cm-comparison{
-  color: #60f774 !important; /* Azul */
+  color: #41fc5a !important; /* Azul */
 }
 
 /* Estilos para resaltar símbolos */
@@ -354,16 +354,16 @@ onUnmounted(() => {
 
 /* Estilos para resaltar paréntesis */
 .cm-bracket {
-  color: #00ffff !important; /* Cyan */
+  color: #74fcfc !important; /* Cyan */
 }
 
 /* Estilos para resaltar llaves */
 .cm-brace {
-  color: #ff00ff6e !important; /* Magenta */
+  color: #f94cf9 !important; /* Magenta */
 }
 
 /* Estilos para resaltar asignación */
 .cm-assign {
-  color: #f392eb !important; /* Rosa */
+  color: #fba9f4 !important; /* Rosa */
 }
 </style>
