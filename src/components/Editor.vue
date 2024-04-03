@@ -138,7 +138,6 @@ defineMode("customMode", () => {
         "while",
         "switch",
         "case",
-        "integer",
         "int",
         "string",
         "float",
@@ -146,33 +145,10 @@ defineMode("customMode", () => {
         "db",
         "double",
         "end",
+        "cin",
+        "cout",
         "main",
         "function",
-        "and",
-        "or",
-      ];
-      const operators = [
-        "+",
-        "-",
-        "*",
-        "/",
-        "%",
-        "^",
-        "<",
-        "<=",
-        ">",
-        ">=",
-        "!=",
-        "==",
-        "and",
-        "or",
-        "=",
-        "(",
-        ")",
-        "{",
-        "}",
-        ",",
-        ";",
       ];
 
       // Verifica si el stream ha llegado al final
@@ -240,9 +216,9 @@ defineMode("customMode", () => {
       }
 
       // Tokeniza símbolos
-      const symbol = stream.match(/^(&&|\|\|)/);
+      const symbol = stream.match(/^(&&|\|\||\+\+|--)/);
       if (symbol) {
-        return "operator"; // Usa una clase de estilo CSS "operator" para operadores "and" y "or"
+        return "operator"; // Usa una clase de estilo CSS "operator" para operadores "and", "or", "++" y "--"
       }
 
       // Tokeniza operador de asignación
@@ -359,7 +335,7 @@ onUnmounted(() => {
 
 /* Estilos para resaltar llaves */
 .cm-brace {
-  color: #f94cf9 !important; /* Magenta */
+  color: #9b88d1 !important; /* Magenta */
 }
 
 /* Estilos para resaltar asignación */
