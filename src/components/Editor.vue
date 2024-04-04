@@ -289,6 +289,13 @@ onUnmounted(() => {
   background: #383838;
 }
 
+.CodeMirror-gutters {
+    border-right: 5px solid #1d1c1c !important;
+    border-right-width: 5px !important;
+    border-right-style: solid !important;
+    border-right-color: rgb(37, 35, 35) !important;
+}
+
 /* Estilos para resaltar números */
 .cm-number {
   color: #3692ed !important; /* Azul */
