@@ -32,31 +32,9 @@
 
 
 <script setup lang="ts">
-import { invoke } from "@tauri-apps/api/tauri";
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { useStore } from "../stores/useStore";
 
 const store = useStore();
 const tokens = ref<string[][]>(store.tokens);
-const error = ref<string[][]>([]);
-const contents = ref<string>(store.contents);
-
-const fetchTokens = async (content: string) => {
-  try {
-    const response = await invoke("lexic", { content: content });
-    const [validTokens, errorTokens] = response as [string[][], string[][]];
-    store.setTokens(validTokens);
-    tokens.value = validTokens;
-    error.value = errorTokens;
-    store.setErrors(errorTokens);
-    console.log(tokens.value);
-    console.log(error.value);
-  } catch (error) {
-    console.error("Error fetching tokens:", error);
-  }
-};
-
-onMounted(() => {
-  fetchTokens(contents.value);
-});
 </script>

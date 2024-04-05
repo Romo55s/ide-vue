@@ -132,7 +132,6 @@ const DeleteFile = async () => {
 
     // Eliminar el archivo utilizando invoke con el comando remove_file
     await invoke("remove_file", { path: store.paths });
-    console.log("¡Archivo eliminado exitosamente!");
     // Limpiar el contenido y el path del archivo
     store.setContents("");
     store.setPaths("");
@@ -163,7 +162,6 @@ const saveFileContents = async () => {
     }
     // Sobrescribe el archivo existente con el contenido actual
     await writeTextFile(store.paths, store.contents);
-    console.log("¡Archivo sobrescrito exitosamente!");
     toast.success("File saved succesfuly", {
       position: toast.POSITION.TOP_RIGHT,
       theme: "dark",
@@ -179,9 +177,7 @@ const saveAsFileContents = async () => {
     if (!result) {
       return;
     }
-    console.log(result);
     store.setPaths(result);
-    console.log(store.contents);
     store.setFlagNewFile(false);
     await invoke("save_file", { path: result, contents: store.contents });
     store.setFlagSave(true);
@@ -198,8 +194,6 @@ const readFileContents = async () => {
     });
     if (!selectedPath) return;
     contents.value = await readTextFile(selectedPath as string);
-    console.log(contents.value);
-    console.log(selectedPath);
     store.setContents(contents.value);
     store.setPaths(selectedPath as string);
     router.push("/editor");

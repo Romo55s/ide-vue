@@ -21,7 +21,10 @@
           <ul class="flex w-full">
             <!-- Agrega la clase w-full para que los botones abarquen todo el ancho -->
             <!-- Botones para recargar rutas -->
-            <li v-if="store.errors.length > 0" class="flex-1 border border-white p-2">
+            <li
+              v-if="store.errors.length > 0"
+              class="flex-1 border border-white p-2"
+            >
               <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
               <button
                 @click="reloadRoute('/analizer/errors')"
@@ -35,7 +38,7 @@
             <li class="flex-1 border border-white p-2">
               <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
               <button
-                @click="reloadRoute('/analizer/lexic')"
+                @click="fetchTokens(code)"
                 class="hover:text-gray-300 flex flex-col items-center w-full"
               >
                 <i class="fas fa-language"></i>
@@ -79,14 +82,7 @@
 
 <script setup lang="ts">
 import Terminal from "./Terminal.vue";
-import {
-  ref,
-  onMounted,
-  onUnmounted,
-  computed,
-  type ComputedRef,
-  watch,
-} from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import Codemirror from "codemirror-editor-vue3";
 import type { CmComponentRef } from "codemirror-editor-vue3";
 import type { Editor, EditorConfiguration } from "codemirror";
@@ -96,6 +92,7 @@ import { useStore } from "../stores/useStore";
 import Analizers from "../views/Analizers.vue";
 import { defineMode } from "codemirror";
 import { useRouter } from "vue-router";
+import { invoke } from "@tauri-apps/api/tauri";
 
 // Obtenemos el enrutador
 const router = useRouter();
@@ -115,11 +112,20 @@ const reloadRoute = (path) => {
   }
 };
 const store = useStore();
-const contents = ref(store.contents);
-console.log(contents.value);
-const message = ref("");
 const cmRef = ref<CmComponentRef>();
 store.setFlagEditor(true);
+
+const fetchTokens = async (content: string) => {
+  try {
+    const response = await invoke("lexic", { content: content });
+    const [validTokens, errorTokens] = response as [string[][], string[][]];
+    store.setTokens(validTokens);
+    store.setErrors(errorTokens);
+    router.push("/analizer/lexic");
+  } catch (error) {
+    console.error("Error fetching tokens:", error);
+  }
+};
 
 defineMode("customMode", () => {
   return {
@@ -132,7 +138,6 @@ defineMode("customMode", () => {
         "while",
         "switch",
         "case",
-        "integer",
         "int",
         "string",
         "float",
@@ -140,33 +145,10 @@ defineMode("customMode", () => {
         "db",
         "double",
         "end",
+        "cin",
+        "cout",
         "main",
         "function",
-        "and",
-        "or",
-      ];
-      const operators = [
-        "+",
-        "-",
-        "*",
-        "/",
-        "%",
-        "^",
-        "<",
-        "<=",
-        ">",
-        ">=",
-        "!=",
-        "==",
-        "and",
-        "or",
-        "=",
-        "(",
-        ")",
-        "{",
-        "}",
-        ",",
-        ";",
       ];
 
       // Verifica si el stream ha llegado al final
@@ -209,10 +191,40 @@ defineMode("customMode", () => {
         return "comment"; // Usa una clase de estilo CSS "comment" para comentarios
       }
 
-      // Tokeniza operadores
-      const operator = stream.match(/^[+\-*/%^<>=!&,;(){}]/);
-      if (operator) {
-        return "operator"; // Usa una clase de estilo CSS "operator" para operadores
+      // Tokeniza operadores aritméticos
+      const arithmeticOperator = stream.match(/^[+\-*/%^]/);
+      if (arithmeticOperator) {
+        return "operator"; // Usa una clase de estilo CSS "operator" para operadores aritméticos
+      }
+
+      // Tokeniza paréntesis
+      const parenthesis = stream.match(/^[\(\)]/);
+      if (parenthesis) {
+        return "bracket"; // Usa una clase de estilo CSS "bracket" para paréntesis
+      }
+
+      // Tokeniza llaves
+      const brace = stream.match(/^[\{\}]/);
+      if (brace) {
+        return "brace"; // Usa una clase de estilo CSS "brace" para llaves
+      }
+
+      // Tokeniza operadores relacionales
+      const comparisonOperator = stream.match(/^(===|==|!==|!=|<=|>=|<|>|;)/);
+      if (comparisonOperator) {
+        return "comparison"; // Usa una clase de estilo CSS "comparison" para operadores relacionales
+      }
+
+      // Tokeniza símbolos
+      const symbol = stream.match(/^(&&|\|\||\+\+|--)/);
+      if (symbol) {
+        return "operator"; // Usa una clase de estilo CSS "operator" para operadores "and", "or", "++" y "--"
+      }
+
+      // Tokeniza operador de asignación
+      const assign = stream.match(/^=/);
+      if (assign) {
+        return "assign"; // Usa una clase de estilo CSS "assign" para el operador de asignación
       }
 
       // Avanza al siguiente token
@@ -226,9 +238,6 @@ const cmOptions: EditorConfiguration = {
   mode: "customMode",
 };
 
-const sidebarWidth = computed(() => store.sidebarWidth);
-const isCollapsed = computed(() => store.collapsed);
-
 const onCursorActivity = (cm: Editor) => {
   const cursor = cm.getCursor(); // Get the current cursor position
   store.setColumn(cursor.ch); // Update the store with the current column
@@ -238,12 +247,10 @@ const onCursorActivity = (cm: Editor) => {
 const code = computed(() => store.contents);
 
 const onChange = (val: string, cm: Editor) => {
-  console.log("Editor content changed:", val); // Agregar esta línea
   store.setContents(cm.getValue());
 };
 
 const onInput = (val: string) => {
-  console.log("Editor input:", val); // Agregar esta línea
   store.setContents(val);
 };
 
@@ -266,31 +273,80 @@ onUnmounted(() => {
 
 <style>
 .dark-theme .CodeMirror {
-  background-color: #000000; /* Color de fondo oscuro */
+  background: #262626;
   color: white;
 }
+
+.CodeMirror .CodeMirror-cursor {
+  color: white !important;
+}
+
+.CodeMirror-cursor{
+  border-left: 1px solid white !important;
+}
+
+.CodeMirror-gutter {
+  background: #383838;
+}
+
+.CodeMirror-gutters {
+    border-right: 5px solid #1d1c1c !important;
+    border-right-width: 5px !important;
+    border-right-style: solid !important;
+    border-right-color: rgb(37, 35, 35) !important;
+}
+
 /* Estilos para resaltar números */
 .cm-number {
-  color: #0f80f1 !important; /* Azul */
+  color: #3692ed !important; /* Azul */
 }
 
 /* Estilos para resaltar identificadores */
 .cm-variable {
-  color: #6a42d7 !important; /* Morado */
+  color: #8059ec !important; /* Morado */
 }
 
 /* Estilos para resaltar comentarios */
 .cm-comment {
-  color: #333333 !important; /* Gris Oscuro */
+  color: #59e559 !important; /* Verde */
 }
 
 /* Estilos para resaltar palabras reservadas */
 .cm-keyword {
-  color: #f50097 !important; /* Rosa */
+  color: #ec4eb0 !important; /* Rosa */
 }
 
 /* Estilos para resaltar operadores */
 .cm-operator {
-  color: #ffa500 !important; /* Naranja */
+  color: #f0af37 !important; /* Naranja */
+}
+
+/* Estilos para resaltar operadores relacionales */
+.cm-operator {
+  color: #ee5d58 !important; /* Rojo */
+}
+
+.cm-comparison{
+  color: #41fc5a !important; /* Azul */
+}
+
+/* Estilos para resaltar símbolos */
+.cm-symbol {
+  color: #ffffff !important; /* Blanco */
+}
+
+/* Estilos para resaltar paréntesis */
+.cm-bracket {
+  color: #74fcfc !important; /* Cyan */
+}
+
+/* Estilos para resaltar llaves */
+.cm-brace {
+  color: #9b88d1 !important; /* Magenta */
+}
+
+/* Estilos para resaltar asignación */
+.cm-assign {
+  color: #fba9f4 !important; /* Rosa */
 }
 </style>
