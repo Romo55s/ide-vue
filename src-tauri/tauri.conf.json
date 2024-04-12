@@ -7,7 +7,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "tauri-ide-app",
+    "productName": "Luven",
     "version": "0.1.0"
   },
   "tauri": {
