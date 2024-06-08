@@ -59,6 +59,7 @@ enum TokenType {
     LBRACE,    // llave izquierda
     RBRACE,    // llave derecha
     COMMA,     // coma
+    COLON,     // dos puntos
     SEMICOLON, // punto y coma
     ASSIGN,    // asignación
 
@@ -84,6 +85,48 @@ enum StateType {
     InId,
     Done,
     EndFile,
+}
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+enum NodeType {
+    Program,
+    Statement,
+    Expression,
+    Term,
+    Factor,
+    Assignment,
+    IfStatement,
+    WhileStatement,
+    WriteStatement,
+    ReadStatement,
+    DoWhileStatement,
+    RepeatUntilStatement,
+    SwitchStatement,
+    CaseStatement,
+    MainFunction,
+    ReturnStatement,
+    CinStatement,
+    CoutStatement,
+    Increment,
+    Decrement,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TreeNode {
+    node_type: NodeType,
+    token: Option<TokenType>,
+    value: Option<String>,
+    children: Vec<TreeNode>,
+}
+
+impl TreeNode {
+    fn new(node_type: NodeType) -> Self {
+        TreeNode {
+            node_type,
+            token: None,
+            value: None,
+            children: Vec::new(),
+        }
+    }
 }
 
 // Función para obtener el siguiente carácter no en blanco de la línea actual
@@ -139,6 +182,10 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
     let mut linepos = 0;
     let bufsize = content.len();
     let mut column_number = 0;
+    let mut in_switch = false;
+    let mut in_case = false;
+    let mut in_block = false;
+    let mut block_stack: Vec<TokenType> = Vec::new();
     while linepos <= bufsize {
         let c = get_next_char(content, &mut linepos, bufsize);
         match state {
@@ -250,13 +297,31 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
                         '^' => tokens.push((TokenType::POWER, "^".to_string(), lineno, column_number)),
                         '(' => tokens.push((TokenType::LPAREN, "(".to_string(), lineno, column_number)),
                         ')' => tokens.push((TokenType::RPAREN, ")".to_string(), lineno, column_number)),
-                        '{' => tokens.push((TokenType::LBRACE, "{".to_string(), lineno, column_number)),
-                        '}' => tokens.push((TokenType::RBRACE, "}".to_string(), lineno, column_number)),
+                        '{' => {
+                            tokens.push((TokenType::LBRACE, "{".to_string(), lineno, column_number));
+                            if in_switch && !in_case {
+                                block_stack.push(TokenType::LBRACE);
+                                in_block = true;
+                            }
+                        },
+                        '}' => {
+                            tokens.push((TokenType::RBRACE, "}".to_string(), lineno, column_number));
+                            if in_switch && !in_case {
+                                if let Some(token) = block_stack.pop() {
+                                    if token != TokenType::LBRACE {
+                                        errors.push((TokenType::ERROR, "Unexpected '}'".to_string(), lineno, column_number));
+                                    }
+                                }
+                                if block_stack.is_empty() {
+                                    in_switch = false;
+                                }
+                            }
+                        },
                         ',' => tokens.push((TokenType::COMMA, ",".to_string(), lineno, column_number)),
                         ';' => tokens.push((TokenType::SEMICOLON, ";".to_string(), lineno, column_number)),
                         '&' => tokens.push((TokenType::AND, "&".to_string(), lineno, column_number)),
                         '|' => tokens.push((TokenType::OR, "|".to_string(), lineno, column_number)),
-                        ':' => tokens.push((TokenType::ASSIGN, ":".to_string(), lineno, column_number)),
+                        ':' => tokens.push((TokenType::COLON, ":".to_string(), lineno, column_number)),
                         '\0' => {
                             state = StateType::EndFile;
                         }
@@ -338,9 +403,432 @@ fn lexic(content: String) -> Result<(Vec<(TokenType, String, usize, usize)>, Vec
     Ok(get_token(&content))
 }
 
+fn match_token(tokens: &[(TokenType, String, usize, usize)], expected: TokenType, current_token: &mut usize) -> Result<(), String> {
+    if *current_token < tokens.len() && tokens[*current_token].0 == expected {
+        *current_token += 1;
+        Ok(())
+    } else {
+        Err(format!("Error de sintaxis: se esperaba {:?} en la posición {:?}", expected, tokens.get(*current_token)))
+    }
+}
+
+fn parse_program(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut root = TreeNode::new(NodeType::Program);
+    while *current_token < tokens.len() && tokens[*current_token].0 != TokenType::ENDFILE {
+        let statement_node = parse_statement(tokens, current_token)?;
+        root.children.push(statement_node);
+    }
+    Ok(root)
+}
+
+fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    match tokens.get(*current_token) {
+        Some((TokenType::ID, _, _, _)) => {
+            if let Some((TokenType::INCREMENT, _, _, _)) = tokens.get(*current_token + 1) {
+                return parse_increment_statement(tokens, current_token);
+            } else if let Some((TokenType::DECREMENT, _, _, _)) = tokens.get(*current_token + 1) {
+                return parse_decrement_statement(tokens, current_token);
+            }
+        }
+        _ => {}
+    }
+    match tokens.get(*current_token) {
+        Some((TokenType::IF, _, _, _)) => parse_if_statement(tokens, current_token),
+        Some((TokenType::WHILE, _, _, _)) => parse_while_statement(tokens, current_token),
+        Some((TokenType::WRITE, _, _, _)) => parse_write_statement(tokens, current_token),
+        Some((TokenType::READ, _, _, _)) => parse_read_statement(tokens, current_token),
+        Some((TokenType::DO, _, _, _)) => parse_do_while_statement(tokens, current_token),
+        Some((TokenType::REPEAT, _, _, _)) => parse_repeat_until_statement(tokens, current_token),
+        Some((TokenType::SWITCH, _, _, _)) => parse_switch_statement(tokens, current_token),
+        Some((TokenType::MAIN, _, _, _)) => parse_main_function(tokens, current_token),
+        Some((TokenType::RETURN, _, _, _)) => parse_return_statement(tokens, current_token),
+        Some((TokenType::CIN, _, _, _)) => parse_cin_statement(tokens, current_token),
+        Some((TokenType::COUT, _, _, _)) => parse_cout_statement(tokens, current_token),
+        Some((TokenType::INTEGER, _, _, _)) => parse_variable_declaration(tokens, current_token),
+        Some((TokenType::ID, _, _, _)) | Some((TokenType::NumInt, _, _, _)) | Some((TokenType::NumReal, _, _, _)) => {
+            let assignment_node = parse_assignment(tokens, current_token)?;
+            if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+                *current_token += 1;
+                Ok(assignment_node)
+            } else {
+                Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
+            }
+        }
+        Some((TokenType::LBRACE, _, _, _)) => {
+            *current_token += 1;
+            let mut statement_list_node = TreeNode::new(NodeType::Statement);
+            while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
+                match token_type {
+                    TokenType::RBRACE => {
+                        *current_token += 1;
+                        return Ok(statement_list_node);
+                    }
+                    _ => {
+                        let statement_node = parse_statement(tokens, current_token)?;
+                        statement_list_node.children.push(statement_node);
+                    }
+                }
+            }
+            Err(format!("Error de sintaxis: se esperaba '}}' al final de la lista de declaraciones"))
+        }
+        _ => Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token))),
+    }
+}
+
+fn parse_variable_declaration(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::Statement);
+    match_token(tokens, TokenType::INTEGER, current_token)?;
+    loop {
+        match tokens.get(*current_token) {
+            Some((TokenType::ID, id, _, _)) => {
+                node.children.push(TreeNode {
+                    node_type: NodeType::Factor,
+                    token: Some(TokenType::ID),
+                    value: Some(id.clone()),
+                    children: Vec::new(),
+                });
+                *current_token += 1;
+                if let Some((TokenType::COMMA, _, _, _)) = tokens.get(*current_token) {
+                    *current_token += 1;
+                } else {
+                    break;
+                }
+            }
+            _ => return Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token))),
+        }
+    }
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1;
+        Ok(node)
+    } else {
+        Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
+    }
+}
+
+
+fn parse_if_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::IfStatement);
+    match_token(tokens, TokenType::IF, current_token)?;
+    let condition_node = parse_expression(tokens, current_token)?;
+    node.children.push(condition_node);
+    let statement_node = parse_statement(tokens, current_token)?;
+    node.children.push(statement_node);
+    if let Some((TokenType::ELSE, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1;
+        let else_node = parse_statement(tokens, current_token)?;
+        node.children.push(else_node);
+    }
+    Ok(node)
+}
+
+fn parse_while_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::WhileStatement);
+    match_token(tokens, TokenType::WHILE, current_token)?;
+    let condition_node = parse_expression(tokens, current_token)?;
+    node.children.push(condition_node);
+    let statement_node = parse_statement(tokens, current_token)?;
+    node.children.push(statement_node);
+    Ok(node)
+}
+
+fn parse_write_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::WriteStatement);
+    match_token(tokens, TokenType::WRITE, current_token)?;
+    let expression_node = parse_expression(tokens, current_token)?;
+    node.children.push(expression_node);
+    Ok(node)
+}
+
+fn parse_read_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::ReadStatement);
+    match_token(tokens, TokenType::READ, current_token)?;
+    if let Some((TokenType::ID, id, _, _)) = tokens.get(*current_token) {
+        node.children.push(TreeNode {
+            node_type: NodeType::Factor,
+            token: Some(TokenType::ID),
+            value: Some(id.clone()),
+            children: Vec::new(),
+        });
+        *current_token += 1;
+        Ok(node)
+    } else {
+        Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)))
+    }
+}
+
+fn parse_do_while_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::DoWhileStatement);
+    match_token(tokens, TokenType::DO, current_token)?;
+    let statement_node = parse_statement(tokens, current_token)?;
+    node.children.push(statement_node);
+    match_token(tokens, TokenType::WHILE, current_token)?;
+    let condition_node = parse_expression(tokens, current_token)?;
+    node.children.push(condition_node);
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1;
+    } else {
+        return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
+    }
+    Ok(node)
+}
+
+fn parse_repeat_until_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::RepeatUntilStatement);
+    match_token(tokens, TokenType::REPEAT, current_token)?;
+    let statement_node = parse_statement(tokens, current_token)?;
+    node.children.push(statement_node);
+    match_token(tokens, TokenType::UNTIL, current_token)?;
+    let condition_node = parse_expression(tokens, current_token)?;
+    node.children.push(condition_node);
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1;
+    } else {
+        return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
+    }
+    Ok(node)
+}
+
+fn parse_switch_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::SwitchStatement);
+    match_token(tokens, TokenType::SWITCH, current_token)?;
+    let expression_node = parse_expression(tokens, current_token)?;
+    node.children.push(expression_node);
+    match_token(tokens, TokenType::LBRACE, current_token)?;
+    while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
+        match token_type {
+            TokenType::CASE => {
+                let case_node = parse_case_statement(tokens, current_token)?;
+                node.children.push(case_node);
+            }
+            TokenType::END => {
+                *current_token += 1;
+                break;
+            }
+            _ => return Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token))),
+        }
+    }
+    match_token(tokens, TokenType::RBRACE, current_token)?;
+    Ok(node)
+}
+
+fn parse_case_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::CaseStatement);
+    match_token(tokens, TokenType::CASE, current_token)?;
+    let value_node = parse_expression(tokens, current_token)?;
+    node.children.push(value_node);
+    match_token(tokens, TokenType::COLON,current_token)?;
+    while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
+        if token_type == &TokenType::END || token_type == &TokenType::CASE {
+            break;
+        } else {
+            let statement_node = parse_statement(tokens, current_token)?;
+            node.children.push(statement_node);
+        }
+    }
+    Ok(node)
+}
+
+
+fn parse_main_function(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::MainFunction);
+    match_token(tokens, TokenType::MAIN, current_token)?;
+    match_token(tokens, TokenType::LPAREN, current_token)?;
+    match_token(tokens, TokenType::RPAREN, current_token)?;
+    let statement_node = parse_statement(tokens, current_token)?;
+    node.children.push(statement_node);
+    Ok(node)
+}
+
+fn parse_return_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::ReturnStatement);
+    match_token(tokens, TokenType::RETURN, current_token)?;
+    let expression_node = parse_expression(tokens, current_token)?;
+    node.children.push(expression_node);
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1;
+    } else {
+        return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
+    }
+    Ok(node)
+}
+
+fn parse_cin_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::CinStatement);
+    match_token(tokens, TokenType::CIN, current_token)?;
+    if let Some((TokenType::ID, id, _, _)) = tokens.get(*current_token) {
+        node.children.push(TreeNode {
+            node_type: NodeType::Factor,
+            token: Some(TokenType::ID),
+            value: Some(id.clone()),
+            children: Vec::new(),
+        });
+        *current_token += 1;
+        Ok(node)
+    } else {
+        Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)))
+    }
+}
+
+fn parse_cout_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::CoutStatement);
+    match_token(tokens, TokenType::COUT, current_token)?;
+    let expression_node = parse_expression(tokens, current_token)?;
+    node.children.push(expression_node);
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1;
+    } else {
+        return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
+    }
+    Ok(node)
+}
+
+fn parse_increment_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::Increment);
+    if let Some((TokenType::ID, id, _, _)) = tokens.get(*current_token) {
+        node.children.push(TreeNode {
+            node_type: NodeType::Factor,
+            token: Some(TokenType::ID),
+            value: Some(id.clone()),
+            children: Vec::new(),
+        });
+        *current_token += 2;
+        if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+            *current_token += 1;
+        } else {
+            return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
+        }
+        Ok(node)
+    } else {
+        Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)))
+    }
+}
+
+fn parse_decrement_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::Decrement);
+    if let Some((TokenType::ID, id, _, _)) = tokens.get(*current_token) {
+        node.children.push(TreeNode {
+            node_type: NodeType::Factor,
+            token: Some(TokenType::ID),
+            value: Some(id.clone()),
+            children: Vec::new(),
+        });
+        *current_token += 2;
+        if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+            *current_token += 1;
+        } else {
+            return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
+        }
+        Ok(node)
+    } else {
+        Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)))
+    }
+}
+
+
+fn parse_expression(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = parse_term(tokens, current_token)?;
+    while let Some((token, _, _, _)) = tokens.get(*current_token) {
+        match token {
+            TokenType::PLUS | TokenType::MINUS | TokenType::LT | TokenType::LTE | TokenType::GT | TokenType::GTE | TokenType::EQ | TokenType::NEQ | TokenType::AND | TokenType::OR => {
+                *current_token += 1;
+                let term_node = parse_term(tokens, current_token)?;
+                let mut expression_node = TreeNode::new(NodeType::Expression);
+                expression_node.children.push(node);
+                expression_node.children.push(TreeNode {
+                    node_type: NodeType::Factor,
+                    token: Some(token.clone()),
+                    value: None,
+                    children: Vec::new(),
+                });
+                expression_node.children.push(term_node);
+                node = expression_node;
+            }
+            _ => break,
+        }
+    }
+    Ok(node)
+}
+
+fn parse_term(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = parse_factor(tokens, current_token)?;
+    while let Some((token, _, _, _)) = tokens.get(*current_token) {
+        match token {
+            TokenType::TIMES | TokenType::DIVIDE | TokenType::MODULO | TokenType::POWER => {
+                *current_token += 1;
+                let factor_node = parse_factor(tokens, current_token)?;
+                let mut term_node = TreeNode::new(NodeType::Term);
+                term_node.children.push(node);
+                term_node.children.push(TreeNode {
+                    node_type: NodeType::Factor,
+                    token: Some(token.clone()),
+                    value: None,
+                    children: Vec::new(),
+                });
+                term_node.children.push(factor_node);
+                node = term_node;
+            }
+            _ => break,
+        }
+    }
+    Ok(node)
+}
+
+fn parse_factor(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    if let Some((token, value, _, _)) = tokens.get(*current_token) {
+        let mut node = TreeNode::new(NodeType::Factor);
+        match token {
+            TokenType::NumInt | TokenType::NumReal | TokenType::ID => {
+                node.token = Some(token.clone());
+                node.value = Some(value.clone());
+                *current_token += 1;
+                Ok(node)
+            }
+            TokenType::LPAREN => {
+                *current_token += 1;
+                let expression_node = parse_expression(tokens, current_token)?;
+                match_token(tokens, TokenType::RPAREN, current_token)?;
+                node.children.push(expression_node);
+                Ok(node)
+            }
+            _ => Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token))),
+        }
+    } else {
+        Err(format!("Error de sintaxis: token inesperado en la posición {:?}", tokens.get(*current_token)))
+    }
+}
+
+fn parse_assignment(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::Assignment);
+    if let Some((TokenType::ID, id, _, _)) = tokens.get(*current_token) {
+        node.children.push(TreeNode {
+            node_type: NodeType::Factor,
+            token: Some(TokenType::ID),
+            value: Some(id.clone()),
+            children: Vec::new(),
+        });
+        *current_token += 1;
+        match_token(tokens, TokenType::ASSIGN, current_token)?;
+        let expression_node = parse_expression(tokens, current_token)?;
+        node.children.push(expression_node);
+        Ok(node)
+    } else {
+        Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)))
+    }
+}
+
+#[tauri::command]
+fn parse(content: String) -> Result<TreeNode, String> {
+    let (tokens, errors) = get_token(&content);
+    if !errors.is_empty() {
+        return Err(format!("Errores léxicos encontrados: {:?}", errors));
+    }
+    let mut current_token = 0;
+    Ok(parse_program(&tokens, &mut current_token)?)
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![save_file, remove_file, lexic])
+        .invoke_handler(tauri::generate_handler![save_file, remove_file, lexic, parse])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
