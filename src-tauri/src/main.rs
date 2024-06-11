@@ -534,9 +534,17 @@ fn parse_while_statement(tokens: &[(TokenType, String, usize, usize)], current_t
 fn parse_write_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::WriteStatement);
     match_token(tokens, TokenType::WRITE, current_token)?;
+
     let expression_node = parse_expression(tokens, current_token)?;
     node.children.push(expression_node);
-    Ok(node)
+
+    // Verificar si hay un punto y coma al final
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1; // Avanzar si hay un punto y coma
+        Ok(node)
+    } else {
+        Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
+    }
 }
 
 fn parse_read_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
@@ -819,9 +827,6 @@ fn parse_assignment(tokens: &[(TokenType, String, usize, usize)], current_token:
 #[tauri::command]
 fn parse(content: String) -> Result<TreeNode, String> {
     let (tokens, errors) = get_token(&content);
-    if !errors.is_empty() {
-        return Err(format!("Errores léxicos encontrados: {:?}", errors));
-    }
     let mut current_token = 0;
     Ok(parse_program(&tokens, &mut current_token)?)
 }
