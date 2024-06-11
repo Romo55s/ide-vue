@@ -17,6 +17,7 @@
     "codemirror": "^5.65.16",
     "codemirror-editor-vue3": "^2.4.1",
     "esbuild": "^0.20.1",
+    "json-tree-view-vue3": "^1.0.2",
     "pinia": "^2.1.7",
     "rollup": "^4.12.0",
     "vue": "^3.4.15",

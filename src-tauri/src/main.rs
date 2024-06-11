@@ -825,10 +825,11 @@ fn parse_assignment(tokens: &[(TokenType, String, usize, usize)], current_token:
 }
 
 #[tauri::command]
-fn parse(content: String) -> Result<TreeNode, String> {
+fn parse(content: String) -> Result<String, String> {
     let (tokens, errors) = get_token(&content);
     let mut current_token = 0;
-    Ok(parse_program(&tokens, &mut current_token)?)
+    let tree = parse_program(&tokens, &mut current_token)?;
+    serde_json::to_string(&tree).map_err(|e| e.to_string())
 }
 
 fn main() {
