@@ -108,6 +108,7 @@ enum NodeType {
     CoutStatement,
     Increment,
     Decrement,
+    Error
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -412,11 +413,13 @@ fn match_token(tokens: &[(TokenType, String, usize, usize)], expected: TokenType
     }
 }
 
-fn parse_program(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+fn parse_program(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize, errors: &mut Vec<String>) -> Result<TreeNode, String> {
     let mut root = TreeNode::new(NodeType::Program);
     while *current_token < tokens.len() && tokens[*current_token].0 != TokenType::ENDFILE {
-        let statement_node = parse_statement(tokens, current_token)?;
-        root.children.push(statement_node);
+        match parse_statement(tokens, current_token) {
+            Ok(statement_node) => root.children.push(statement_node),
+            Err(err) => errors.push(err.to_string()), // Convertir el error en una cadena antes de agregarlo al vector
+        }
     }
     Ok(root)
 }
@@ -671,9 +674,14 @@ fn parse_cin_statement(tokens: &[(TokenType, String, usize, usize)], current_tok
             children: Vec::new(),
         });
         *current_token += 1;
+    } else {
+        return Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)));
+    }
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1; // Avanzar si hay un punto y coma
         Ok(node)
     } else {
-        Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)))
+        Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
     }
 }
 
@@ -825,11 +833,24 @@ fn parse_assignment(tokens: &[(TokenType, String, usize, usize)], current_token:
 }
 
 #[tauri::command]
-fn parse(content: String) -> Result<TreeNode, String> {
+fn parse(content: String) -> Result<(TreeNode, Vec<String>), String> {
     let (tokens, errors) = get_token(&content);
+    // Convertir los errores léxicos en cadenas de texto y agregarlos al vector de errores
+    let mut errors_str: Vec<String> = Vec::new();
+
     let mut current_token = 0;
-    Ok(parse_program(&tokens, &mut current_token)?)
+    let syntax_tree = match parse_program(&tokens, &mut current_token, &mut errors_str) {
+        Ok(tree) => tree,
+        Err(err) => {
+            // Convertir el error del tipo Result<TreeNode, String> en una cadena y agregarlo al vector de errores
+            errors_str.push(err.to_string()); // Convertir a String antes de agregar
+            TreeNode::new(NodeType::Error) // Crear un nodo de error
+        }
+    };
+
+    Ok((syntax_tree, errors_str))
 }
+
 
 fn main() {
     tauri::Builder::default()
