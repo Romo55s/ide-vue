@@ -436,6 +436,14 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
         _ => {}
     }
     match tokens.get(*current_token) {
+        Some((TokenType::COLON, _, _, _)) => {
+            // Verificar si es una declaración de incremento o decremento
+            *current_token += 1; // Avanzar el token actual
+            TreeNode::new(NodeType::Error);
+        }
+        _ => {}
+    }
+    match tokens.get(*current_token) {
         Some((TokenType::IF, _, _, _)) => parse_if_statement(tokens, current_token),
         Some((TokenType::WHILE, _, _, _)) => parse_while_statement(tokens, current_token),
         Some((TokenType::WRITE, _, _, _)) => parse_write_statement(tokens, current_token),
