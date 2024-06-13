@@ -841,20 +841,12 @@ fn parse_assignment(tokens: &[(TokenType, String, usize, usize)], current_token:
 }
 
 #[tauri::command]
-<<<<<<< HEAD
-fn parse(content: String) -> Result<String, String> {
-=======
 fn parse(content: String) -> Result<(TreeNode, Vec<String>), String> {
->>>>>>> errors-in-parse
     let (tokens, errors) = get_token(&content);
     // Convertir los errores léxicos en cadenas de texto y agregarlos al vector de errores
     let mut errors_str: Vec<String> = Vec::new();
 
     let mut current_token = 0;
-<<<<<<< HEAD
-    let tree = parse_program(&tokens, &mut current_token)?;
-    serde_json::to_string(&tree).map_err(|e| e.to_string())
-=======
     let syntax_tree = match parse_program(&tokens, &mut current_token, &mut errors_str) {
         Ok(tree) => tree,
         Err(err) => {
@@ -865,7 +857,6 @@ fn parse(content: String) -> Result<(TreeNode, Vec<String>), String> {
     };
 
     Ok((syntax_tree, errors_str))
->>>>>>> errors-in-parse
 }
 
 
