@@ -22,7 +22,7 @@
             <!-- Agrega la clase w-full para que los botones abarquen todo el ancho -->
             <!-- Botones para recargar rutas -->
             <li
-              v-if="store.errors.length > 0"
+              v-if="store.errors.length > 0 || store.errorsSyntax.length > 0"
               class="flex-1 border border-white p-2"
             >
               <!-- Utiliza la clase flex-1 para que los elementos se expandan -->
@@ -119,6 +119,7 @@ const fetchTokens = async (content: string) => {
   try {
     const response = await invoke("lexic", { content: content });
     const [validTokens, errorTokens] = response as [string[][], string[][]];
+    store.resetErrors();
     store.setTokens(validTokens);
     store.setErrors(errorTokens);
     router.push("/analizer/lexic");
@@ -253,6 +254,7 @@ const onChange = (val: string, cm: Editor) => {
 const onInput = (val: string) => {
   store.setContents(val);
 };
+
 
 const onReady = (cm: Editor) => {};
 
