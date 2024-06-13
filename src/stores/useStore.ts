@@ -14,6 +14,7 @@ export const useStore = defineStore({
     flagEditor: false,
     flagSave: false,
     errors: [] as string[][],
+    errorsSyntax: [] as string[],
     tokens: [] as string[][],
   }),
   actions: {
@@ -47,6 +48,13 @@ export const useStore = defineStore({
     },
     setTokens(tokens: string[][]) {
       this.tokens = tokens;
-    }
+    },
+    setErrorsSyntax(errors: string[]) {
+      this.errorsSyntax = errors;
+    },
+    resetErrors() {
+      this.errors = [];
+      this.errorsSyntax = [];
+    },
   },
 });
