@@ -545,11 +545,17 @@ fn parse_while_statement(tokens: &[(TokenType, String, usize, usize)], current_t
 fn parse_write_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::WriteStatement);
     match_token(tokens, TokenType::WRITE, current_token)?;
-
-    let expression_node = parse_expression(tokens, current_token)?;
-    node.children.push(expression_node);
-
-    // Verificar si hay un punto y coma al final
+    if let Some((TokenType::ID, id, _, _)) = tokens.get(*current_token) {
+        node.children.push(TreeNode {
+            node_type: NodeType::Factor,
+            token: Some(TokenType::ID),
+            value: Some(id.clone()),
+            children: Vec::new(),
+        });
+        *current_token += 1;
+    } else {
+        return Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)));
+    }
     if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
         *current_token += 1; // Avanzar si hay un punto y coma
         Ok(node)
@@ -569,9 +575,14 @@ fn parse_read_statement(tokens: &[(TokenType, String, usize, usize)], current_to
             children: Vec::new(),
         });
         *current_token += 1;
+    } else {
+        return Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)));
+    }
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1; // Avanzar si hay un punto y coma
         Ok(node)
     } else {
-        Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)))
+        Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
     }
 }
 
