@@ -841,8 +841,9 @@ fn parse_assignment(tokens: &[(TokenType, String, usize, usize)], current_token:
 }
 
 #[tauri::command]
-fn parse(content: String) -> Result<(TreeNode, Vec<String>), String> {
-    let (tokens, errors) = get_token(&content);
+fn parse(tokens: Vec<(TokenType, String, usize, usize)>) -> Result<(TreeNode, Vec<String>), String> {
+    // No necesitas llamar a get_token aquí porque ya tienes los tokens
+
     // Convertir los errores léxicos en cadenas de texto y agregarlos al vector de errores
     let mut errors_str: Vec<String> = Vec::new();
 

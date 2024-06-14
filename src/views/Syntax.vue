@@ -40,9 +40,9 @@ const errors = ref<string[] | null>(null);
 
 const generateSyntaxTree = async (): Promise<void> => {
   try {
-    console.log("Calling parse with content:", contents.value); // Imprimir el contenido
+    console.log("Calling parse with tokens:", store.tokens); // Imprimir los tokens
     const [result, errorsResult]: [TreeNode, string[]] = await invoke("parse", {
-      content: contents.value,
+      tokens: store.tokens,
     });
     console.log("Received result:", result); // Imprimir el resultado
     console.log("Received errorsResult:", errorsResult); // Imprimir los errores
