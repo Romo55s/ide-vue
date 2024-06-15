@@ -89,6 +89,8 @@ enum StateType {
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 enum NodeType {
     Program,
+    IntStatement,
+    DoubleStatement,
     Statement,
     Expression,
     Term,
@@ -414,15 +416,29 @@ fn match_token(tokens: &[(TokenType, String, usize, usize)], expected: TokenType
 }
 
 fn parse_program(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize, errors: &mut Vec<String>) -> Result<TreeNode, String> {
-    let mut root = TreeNode::new(NodeType::Program);
+    // Intentar parsear la función main
+    let main_node = parse_main_function(tokens, current_token);
+    
+    // Si la función main no se encuentra al principio, retornar un error
+    if let Err(err) = main_node {
+        errors.push(err);
+        return Err(String::from("Main function must be defined at the beginning of the program."));
+    }
+    
+    // Obtener el nodo de la función main
+    let mut root = main_node.unwrap();
+
+    // Parsear el resto de las declaraciones
     while *current_token < tokens.len() && tokens[*current_token].0 != TokenType::ENDFILE {
         match parse_statement(tokens, current_token) {
             Ok(statement_node) => root.children.push(statement_node),
             Err(err) => errors.push(err.to_string()), // Convertir el error en una cadena antes de agregarlo al vector
         }
     }
+
     Ok(root)
 }
+
 
 fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     match tokens.get(*current_token) {
@@ -451,11 +467,11 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
         Some((TokenType::DO, _, _, _)) => parse_do_while_statement(tokens, current_token),
         Some((TokenType::REPEAT, _, _, _)) => parse_repeat_until_statement(tokens, current_token),
         Some((TokenType::SWITCH, _, _, _)) => parse_switch_statement(tokens, current_token),
-        Some((TokenType::MAIN, _, _, _)) => parse_main_function(tokens, current_token),
         Some((TokenType::RETURN, _, _, _)) => parse_return_statement(tokens, current_token),
         Some((TokenType::CIN, _, _, _)) => parse_cin_statement(tokens, current_token),
         Some((TokenType::COUT, _, _, _)) => parse_cout_statement(tokens, current_token),
-        Some((TokenType::INTEGER, _, _, _)) => parse_variable_declaration(tokens, current_token),
+        Some((TokenType::INTEGER, _, _, _)) => parse_int_variable_declaration(tokens, current_token),
+        Some((TokenType::DOUBLE, _, _, _)) => parse_double_variable_declaration(tokens, current_token),
         Some((TokenType::ID, _, _, _)) | Some((TokenType::NumInt, _, _, _)) | Some((TokenType::NumReal, _, _, _)) => {
             let assignment_node = parse_assignment(tokens, current_token)?;
             if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
@@ -486,9 +502,13 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
     }
 }
 
-fn parse_variable_declaration(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
-    let mut node = TreeNode::new(NodeType::Statement);
+fn parse_int_variable_declaration(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::IntStatement);
+
+    // Parsear la palabra clave 'int'
     match_token(tokens, TokenType::INTEGER, current_token)?;
+
+    // Parsear los identificadores
     loop {
         match tokens.get(*current_token) {
             Some((TokenType::ID, id, _, _)) => {
@@ -500,22 +520,58 @@ fn parse_variable_declaration(tokens: &[(TokenType, String, usize, usize)], curr
                 });
                 *current_token += 1;
                 if let Some((TokenType::COMMA, _, _, _)) = tokens.get(*current_token) {
-                    *current_token += 1;
+                    *current_token += 1; // Avanzar si hay una coma
                 } else {
-                    break;
+                    break; // Salir del bucle si no hay más identificadores
                 }
             }
             _ => return Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token))),
         }
     }
+
+    // Verificar si hay un punto y coma al final
     if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
-        *current_token += 1;
+        *current_token += 1; // Avanzar si hay un punto y coma
         Ok(node)
     } else {
         Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
     }
 }
 
+fn parse_double_variable_declaration(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::DoubleStatement);
+
+    match_token(tokens, TokenType::DOUBLE, current_token)?;
+
+    // Parsear los identificadores
+    loop {
+        match tokens.get(*current_token) {
+            Some((TokenType::ID, id, _, _)) => {
+                node.children.push(TreeNode {
+                    node_type: NodeType::Factor,
+                    token: Some(TokenType::ID),
+                    value: Some(id.clone()),
+                    children: Vec::new(),
+                });
+                *current_token += 1;
+                if let Some((TokenType::COMMA, _, _, _)) = tokens.get(*current_token) {
+                    *current_token += 1; // Avanzar si hay una coma
+                } else {
+                    break; // Salir del bucle si no hay más identificadores
+                }
+            }
+            _ => return Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token))),
+        }
+    }
+
+    // Verificar si hay un punto y coma al final
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1; // Avanzar si hay un punto y coma
+        Ok(node)
+    } else {
+        Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
+    }
+}
 
 fn parse_if_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::IfStatement);
