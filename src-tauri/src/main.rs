@@ -88,7 +88,7 @@ enum StateType {
 }
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 enum NodeType {
-    Program,
+    MainRoot,
     IntStatement,
     DoubleStatement,
     Statement,
@@ -185,10 +185,6 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
     let mut linepos = 0;
     let bufsize = content.len();
     let mut column_number = 0;
-    let mut in_switch = false;
-    let mut in_case = false;
-    let mut in_block = false;
-    let mut block_stack: Vec<TokenType> = Vec::new();
     while linepos <= bufsize {
         let c = get_next_char(content, &mut linepos, bufsize);
         match state {
@@ -300,26 +296,8 @@ fn get_token(content: &str) -> (Vec<(TokenType, String, usize, usize)>, Vec<(Tok
                         '^' => tokens.push((TokenType::POWER, "^".to_string(), lineno, column_number)),
                         '(' => tokens.push((TokenType::LPAREN, "(".to_string(), lineno, column_number)),
                         ')' => tokens.push((TokenType::RPAREN, ")".to_string(), lineno, column_number)),
-                        '{' => {
-                            tokens.push((TokenType::LBRACE, "{".to_string(), lineno, column_number));
-                            if in_switch && !in_case {
-                                block_stack.push(TokenType::LBRACE);
-                                in_block = true;
-                            }
-                        },
-                        '}' => {
-                            tokens.push((TokenType::RBRACE, "}".to_string(), lineno, column_number));
-                            if in_switch && !in_case {
-                                if let Some(token) = block_stack.pop() {
-                                    if token != TokenType::LBRACE {
-                                        errors.push((TokenType::ERROR, "Unexpected '}'".to_string(), lineno, column_number));
-                                    }
-                                }
-                                if block_stack.is_empty() {
-                                    in_switch = false;
-                                }
-                            }
-                        },
+                        '{' => tokens.push((TokenType::LBRACE, "{".to_string(), lineno, column_number)),
+                        '}' => tokens.push((TokenType::RBRACE, "}".to_string(), lineno, column_number)),
                         ',' => tokens.push((TokenType::COMMA, ",".to_string(), lineno, column_number)),
                         ';' => tokens.push((TokenType::SEMICOLON, ";".to_string(), lineno, column_number)),
                         '&' => tokens.push((TokenType::AND, "&".to_string(), lineno, column_number)),
@@ -416,19 +394,7 @@ fn match_token(tokens: &[(TokenType, String, usize, usize)], expected: TokenType
 }
 
 fn parse_program(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize, errors: &mut Vec<String>) -> Result<TreeNode, String> {
-    // Intentar parsear la función main
-    let main_node = parse_main_function(tokens, current_token);
-    
-    // Si la función main no se encuentra al principio, retornar un error
-    if let Err(err) = main_node {
-        errors.push(err);
-        return Err(String::from("Main function must be defined at the beginning of the program."));
-    }
-    
-    // Obtener el nodo de la función main
-    let mut root = main_node.unwrap();
-
-    // Parsear el resto de las declaraciones
+    let mut root = TreeNode::new(NodeType::MainRoot);
     while *current_token < tokens.len() && tokens[*current_token].0 != TokenType::ENDFILE {
         match parse_statement(tokens, current_token) {
             Ok(statement_node) => root.children.push(statement_node),
@@ -438,8 +404,6 @@ fn parse_program(tokens: &[(TokenType, String, usize, usize)], current_token: &m
 
     Ok(root)
 }
-
-
 fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     match tokens.get(*current_token) {
         Some((TokenType::ID, _, _, _)) => {
@@ -470,6 +434,7 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
         Some((TokenType::RETURN, _, _, _)) => parse_return_statement(tokens, current_token),
         Some((TokenType::CIN, _, _, _)) => parse_cin_statement(tokens, current_token),
         Some((TokenType::COUT, _, _, _)) => parse_cout_statement(tokens, current_token),
+        Some((TokenType::MAIN, _, _, _)) => parse_main_function(tokens, current_token),
         Some((TokenType::INTEGER, _, _, _)) => parse_int_variable_declaration(tokens, current_token),
         Some((TokenType::DOUBLE, _, _, _)) => parse_double_variable_declaration(tokens, current_token),
         Some((TokenType::ID, _, _, _)) | Some((TokenType::NumInt, _, _, _)) | Some((TokenType::NumReal, _, _, _)) => {
@@ -491,8 +456,16 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
                         return Ok(statement_list_node);
                     }
                     _ => {
-                        let statement_node = parse_statement(tokens, current_token)?;
-                        statement_list_node.children.push(statement_node);
+                        // Attempt to parse each statement; if error, log and continue
+                        match parse_statement(tokens, current_token) {
+                            Ok(statement_node) => {
+                                statement_list_node.children.push(statement_node);
+                            }
+                            Err(err) => {
+                                *current_token += 1; // Move to next token to attempt recovery
+                                return Err(err);
+                            }
+                        }
                     }
                 }
             }
@@ -575,18 +548,90 @@ fn parse_double_variable_declaration(tokens: &[(TokenType, String, usize, usize)
 
 fn parse_if_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::IfStatement);
+
+    // Parse 'if' token and condition
     match_token(tokens, TokenType::IF, current_token)?;
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
-    let statement_node = parse_statement(tokens, current_token)?;
-    node.children.push(statement_node);
-    if let Some((TokenType::ELSE, _, _, _)) = tokens.get(*current_token) {
-        *current_token += 1;
-        let else_node = parse_statement(tokens, current_token)?;
-        node.children.push(else_node);
+
+    // Parse 'if' statement block
+    let if_statement_result = parse_statement(tokens, current_token);
+    if let Ok(if_statement_node) = if_statement_result {
+        node.children.push(if_statement_node);
+    } else {
+        // Handle error in 'if' statement block
+        let err = format!("Error en el bloque 'if': {}", if_statement_result.err().unwrap());
+        *current_token += 1; // Skip to next token to attempt recovery
+        return Err(err);
     }
+
+    // Parse 'else' block if present
+    if let Some((TokenType::ELSE, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1; // Consume 'else' token
+        let else_statement_result = parse_statement(tokens, current_token);
+        if let Ok(else_statement_node) = else_statement_result {
+            node.children.push(else_statement_node);
+        } else {
+            // Handle error in 'else' block
+            let err = format!("Error en el bloque 'else': {}", else_statement_result.err().unwrap());
+            *current_token += 1; // Skip to next token to attempt recovery
+            return Err(err);
+        }
+    }
+
     Ok(node)
 }
+
+
+fn parse_do_while_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::DoWhileStatement);
+
+    // Parse 'do' token
+    match_token(tokens, TokenType::DO, current_token)?;
+
+    // Parse 'do' statement block
+    if let Some((TokenType::LBRACE, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1;
+        let mut statement_list_node = TreeNode::new(NodeType::Statement);
+        while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
+            match token_type {
+                TokenType::RBRACE => {
+                    *current_token += 1;
+                    break; // Exit the loop when encountering '}'
+                }
+                _ => {
+                    let statement_node_result = parse_statement(tokens, current_token);
+                    if let Ok(statement_node) = statement_node_result {
+                        statement_list_node.children.push(statement_node);
+                    } else {
+                        // Handle error in statement block
+                        let err = format!("Error en el bloque 'do': {}", statement_node_result.err().unwrap());
+                        *current_token += 1; // Skip to next token to attempt recovery
+                        return Err(err);
+                    }
+                }
+            }
+        }
+        node.children.push(statement_list_node);
+    } else {
+        return Err(format!("Error de sintaxis: se esperaba '{{' después de 'do' en la posición {:?}", *current_token));
+    }
+
+    // Parse 'while' token and condition
+    match_token(tokens, TokenType::WHILE, current_token)?;
+    let condition_node = parse_expression(tokens, current_token)?;
+    node.children.push(condition_node);
+
+    // Check for ';'
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1;
+    } else {
+        return Err(format!("Error de sintaxis: se esperaba ';' después de la condición 'while' en la posición {:?}", *current_token));
+    }
+
+    Ok(node)
+}
+
 
 fn parse_while_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::WhileStatement);
@@ -642,21 +687,6 @@ fn parse_read_statement(tokens: &[(TokenType, String, usize, usize)], current_to
     }
 }
 
-fn parse_do_while_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
-    let mut node = TreeNode::new(NodeType::DoWhileStatement);
-    match_token(tokens, TokenType::DO, current_token)?;
-    let statement_node = parse_statement(tokens, current_token)?;
-    node.children.push(statement_node);
-    match_token(tokens, TokenType::WHILE, current_token)?;
-    let condition_node = parse_expression(tokens, current_token)?;
-    node.children.push(condition_node);
-    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
-        *current_token += 1;
-    } else {
-        return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
-    }
-    Ok(node)
-}
 
 fn parse_repeat_until_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::RepeatUntilStatement);
@@ -818,7 +848,7 @@ fn parse_decrement_statement(tokens: &[(TokenType, String, usize, usize)], curre
 
 fn parse_expression(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = parse_term(tokens, current_token)?;
-    while let Some((token, _, _, _)) = tokens.get(*current_token) {
+    while let Some((token, value, _, _)) = tokens.get(*current_token) {
         match token {
             TokenType::PLUS | TokenType::MINUS | TokenType::LT | TokenType::LTE | TokenType::GT | TokenType::GTE | TokenType::EQ | TokenType::NEQ | TokenType::AND | TokenType::OR => {
                 *current_token += 1;
@@ -828,7 +858,7 @@ fn parse_expression(tokens: &[(TokenType, String, usize, usize)], current_token:
                 expression_node.children.push(TreeNode {
                     node_type: NodeType::Factor,
                     token: Some(token.clone()),
-                    value: None,
+                    value: Some(value.clone()),
                     children: Vec::new(),
                 });
                 expression_node.children.push(term_node);
@@ -842,7 +872,7 @@ fn parse_expression(tokens: &[(TokenType, String, usize, usize)], current_token:
 
 fn parse_term(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = parse_factor(tokens, current_token)?;
-    while let Some((token, _, _, _)) = tokens.get(*current_token) {
+    while let Some((token, value, _, _)) = tokens.get(*current_token) {
         match token {
             TokenType::TIMES | TokenType::DIVIDE | TokenType::MODULO | TokenType::POWER => {
                 *current_token += 1;
@@ -852,7 +882,7 @@ fn parse_term(tokens: &[(TokenType, String, usize, usize)], current_token: &mut 
                 term_node.children.push(TreeNode {
                     node_type: NodeType::Factor,
                     token: Some(token.clone()),
-                    value: None,
+                    value: Some(value.clone()),
                     children: Vec::new(),
                 });
                 term_node.children.push(factor_node);
