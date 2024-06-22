@@ -1,12 +1,15 @@
 <template>
-  <div
-    class="bg-neutral-950 min-h-full flex justify-center items-center text-white"
-  >
+  <div class="bg-neutral-950 min-h-full flex justify-center items-center text-white">
     <div class="max-w-3xl p-8">
       <h1 class="text-4xl font-bold mb-4">Syntax</h1>
-      <div v-if="json">
-        <!-- Aquí deberías renderizar tu árbol sintáctico, esto es solo un ejemplo -->
-        <json-tree-view :json="JSON.stringify(json)" :colorScheme="colorScheme" />
+      <div v-if="treeNodes.length > 0">
+        <div class="card flex flex-col align-items-center">
+          <div class="flex flex-wrap mb-6 space-x-2">
+            <Button type="button" icon="pi pi-plus" label="Expand All" @click="expandAll" outlined />
+            <Button type="button" icon="pi pi-minus" label="Collapse All" @click="collapseAll" outlined />
+          </div>
+          <Tree v-model:expandedKeys="expandedKeys" :value="treeNodes" class="w-full md:w-[30rem] custom-tree"></Tree>
+        </div>
       </div>
       <div v-else>
         <p>No Syntactic tree available.</p>
@@ -17,36 +20,34 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { JsonTreeView } from "json-tree-view-vue3";
-import "json-tree-view-vue3/dist/style.css";
+import Tree from 'primevue/tree';
+import Button from 'primevue/button';
 import { invoke } from "@tauri-apps/api/tauri";
 import { useStore } from "../stores/useStore";
 
-
 interface TreeNode {
-  // Define las propiedades de TreeNode aquí
-  // Por ejemplo:
-  type: string;
-  children: TreeNode[];
-  // etc...
+  key: string;
+  label: string;
+  children?: TreeNode[];
 }
 
-const colorScheme = 'dark';
 const store = useStore();
-const contents = ref(store.contents);
-console.log(contents.value);
-const json = ref<TreeNode | null>(null);
+const tokens = ref(store.tokens);
+const tree = ref<any>(null);
 const errors = ref<string[] | null>(null);
+const treeNodes = ref<TreeNode[]>([]);
+const expandedKeys = ref<{ [key: string]: boolean }>({});
 
 const generateSyntaxTree = async (): Promise<void> => {
   try {
-    console.log("Calling parse with tokens:", store.tokens); // Imprimir los tokens
-    const [result, errorsResult]: [TreeNode, string[]] = await invoke("parse", {
-      tokens: store.tokens,
+    console.log("Calling parse with content:", tokens.value);
+    const [result, errorsResult]: [any, string[]] = await invoke("parse", {
+      tokens: tokens.value,
     });
-    console.log("Received result:", result); // Imprimir el resultado
-    console.log("Received errorsResult:", errorsResult); // Imprimir los errores
-    json.value = result;
+    console.log("Received result:", result);
+    console.log("Received errorsResult:", errorsResult);
+    tree.value = result;
+    treeNodes.value = [transformNode(result)];
     errors.value = errorsResult;
     store.resetErrors();
     store.setErrorsSyntax(errorsResult);
@@ -55,15 +56,45 @@ const generateSyntaxTree = async (): Promise<void> => {
   }
 };
 
+const transformNode = (node: any): TreeNode => {
+  const token = node.token || '-';
+  const value = node.value || '-';
+  const label = `${node.node_type} (token: ${token}, value: ${value})`;
+
+  const transformedNode: TreeNode = {
+    key: node.node_type,
+    label,
+    children: node.children?.map((child: any) => transformNode(child)) || [],
+  };
+  return transformedNode;
+};
+
+const expandAll = () => {
+  if (treeNodes.value.length > 0) {
+    for (let node of treeNodes.value) {
+      expandNode(node);
+    }
+    expandedKeys.value = { ...expandedKeys.value };
+  }
+};
+
+const collapseAll = () => {
+  expandedKeys.value = {};
+};
+
+const expandNode = (node: TreeNode) => {
+  expandedKeys.value[node.key] = true;
+  if (node.children && node.children.length) {
+    for (let child of node.children) {
+      expandNode(child);
+    }
+  }
+};
+
 const redirectToAnotherView = (): void => {
-  console.log("Redirigiendo a otra vista...");
+  console.log("Redirecting to another view...");
 };
 
 onMounted(generateSyntaxTree);
 </script>
 
-<style scoped>
-.tree-view-item-key {
-    color: red;
-}
-</style>
