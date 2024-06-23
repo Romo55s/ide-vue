@@ -469,6 +469,7 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
                     }
                 }
             }
+            //*current_token+=1;
             Err(format!("Error de sintaxis: se esperaba '}}' al final de la lista de declaraciones"))
         }
         _ => Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token))),
@@ -548,37 +549,16 @@ fn parse_double_variable_declaration(tokens: &[(TokenType, String, usize, usize)
 
 fn parse_if_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::IfStatement);
-
-    // Parse 'if' token and condition
     match_token(tokens, TokenType::IF, current_token)?;
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
-
-    // Parse 'if' statement block
-    let if_statement_result = parse_statement(tokens, current_token);
-    if let Ok(if_statement_node) = if_statement_result {
-        node.children.push(if_statement_node);
-    } else {
-        // Handle error in 'if' statement block
-        let err = format!("Error en el bloque 'if': {}", if_statement_result.err().unwrap());
-        *current_token += 1; // Skip to next token to attempt recovery
-        return Err(err);
-    }
-
-    // Parse 'else' block if present
+    let statement_node = parse_statement(tokens, current_token)?;
+    node.children.push(statement_node);
     if let Some((TokenType::ELSE, _, _, _)) = tokens.get(*current_token) {
-        *current_token += 1; // Consume 'else' token
-        let else_statement_result = parse_statement(tokens, current_token);
-        if let Ok(else_statement_node) = else_statement_result {
-            node.children.push(else_statement_node);
-        } else {
-            // Handle error in 'else' block
-            let err = format!("Error en el bloque 'else': {}", else_statement_result.err().unwrap());
-            *current_token += 1; // Skip to next token to attempt recovery
-            return Err(err);
-        }
+        *current_token += 1;
+        let else_node = parse_statement(tokens, current_token)?;
+        node.children.push(else_node);
     }
-
     Ok(node)
 }
 
