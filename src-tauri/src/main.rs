@@ -97,6 +97,7 @@ enum NodeType {
     Factor,
     Assignment,
     IfStatement,
+    ElseStatement,
     WhileStatement,
     WriteStatement,
     ReadStatement,
@@ -415,66 +416,42 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
         }
         _ => {}
     }
+    
     match tokens.get(*current_token) {
         Some((TokenType::COLON, _, _, _)) => {
-            // Verificar si es una declaración de incremento o decremento
-            *current_token += 1; // Avanzar el token actual
+            *current_token += 1;
             TreeNode::new(NodeType::Error);
         }
         _ => {}
     }
+    
     match tokens.get(*current_token) {
-        Some((TokenType::IF, _, _, _)) => parse_if_statement(tokens, current_token),
-        Some((TokenType::WHILE, _, _, _)) => parse_while_statement(tokens, current_token),
-        Some((TokenType::WRITE, _, _, _)) => parse_write_statement(tokens, current_token),
-        Some((TokenType::READ, _, _, _)) => parse_read_statement(tokens, current_token),
-        Some((TokenType::DO, _, _, _)) => parse_do_while_statement(tokens, current_token),
-        Some((TokenType::REPEAT, _, _, _)) => parse_repeat_until_statement(tokens, current_token),
-        Some((TokenType::SWITCH, _, _, _)) => parse_switch_statement(tokens, current_token),
-        Some((TokenType::RETURN, _, _, _)) => parse_return_statement(tokens, current_token),
-        Some((TokenType::CIN, _, _, _)) => parse_cin_statement(tokens, current_token),
-        Some((TokenType::COUT, _, _, _)) => parse_cout_statement(tokens, current_token),
-        Some((TokenType::MAIN, _, _, _)) => parse_main_function(tokens, current_token),
-        Some((TokenType::INTEGER, _, _, _)) => parse_int_variable_declaration(tokens, current_token),
-        Some((TokenType::DOUBLE, _, _, _)) => parse_double_variable_declaration(tokens, current_token),
+        Some((TokenType::IF, _, _, _)) => return parse_if_statement(tokens, current_token),
+        Some((TokenType::WHILE, _, _, _)) => return parse_while_statement(tokens, current_token),
+        Some((TokenType::WRITE, _, _, _)) => return parse_write_statement(tokens, current_token),
+        Some((TokenType::READ, _, _, _)) => return parse_read_statement(tokens, current_token),
+        Some((TokenType::DO, _, _, _)) => return parse_do_while_statement(tokens, current_token),
+        Some((TokenType::REPEAT, _, _, _)) => return parse_repeat_until_statement(tokens, current_token),
+        Some((TokenType::SWITCH, _, _, _)) => return parse_switch_statement(tokens, current_token),
+        Some((TokenType::RETURN, _, _, _)) => return parse_return_statement(tokens, current_token),
+        Some((TokenType::CIN, _, _, _)) => return parse_cin_statement(tokens, current_token),
+        Some((TokenType::COUT, _, _, _)) => return parse_cout_statement(tokens, current_token),
+        Some((TokenType::MAIN, _, _, _)) => return parse_main_function(tokens, current_token),
+        Some((TokenType::INTEGER, _, _, _)) => return parse_int_variable_declaration(tokens, current_token),
+        Some((TokenType::DOUBLE, _, _, _)) => return parse_double_variable_declaration(tokens, current_token),
         Some((TokenType::ID, _, _, _)) | Some((TokenType::NumInt, _, _, _)) | Some((TokenType::NumReal, _, _, _)) => {
             let assignment_node = parse_assignment(tokens, current_token)?;
             if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
                 *current_token += 1;
-                Ok(assignment_node)
+                return Ok(assignment_node);
             } else {
-                Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
+                return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
             }
         }
-        Some((TokenType::LBRACE, _, _, _)) => {
-            *current_token += 1;
-            let mut statement_list_node = TreeNode::new(NodeType::Statement);
-            while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
-                match token_type {
-                    TokenType::RBRACE => {
-                        *current_token += 1;
-                        return Ok(statement_list_node);
-                    }
-                    _ => {
-                        // Attempt to parse each statement; if error, log and continue
-                        match parse_statement(tokens, current_token) {
-                            Ok(statement_node) => {
-                                statement_list_node.children.push(statement_node);
-                            }
-                            Err(err) => {
-                                *current_token += 1; // Move to next token to attempt recovery
-                                return Err(err);
-                            }
-                        }
-                    }
-                }
-            }
-            //*current_token+=1;
-            Err(format!("Error de sintaxis: se esperaba '}}' al final de la lista de declaraciones"))
-        }
-        _ => Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token))),
+        _ => return Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token))),
     }
 }
+
 
 fn parse_int_variable_declaration(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::IntStatement);
@@ -552,12 +529,38 @@ fn parse_if_statement(tokens: &[(TokenType, String, usize, usize)], current_toke
     match_token(tokens, TokenType::IF, current_token)?;
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
-    let statement_node = parse_statement(tokens, current_token)?;
-    node.children.push(statement_node);
+    let statement_node = parse_statement(tokens, current_token);
+    match statement_node {
+        Ok(statement_node) => {
+            node.children.push(statement_node);
+        }
+        Err(err) => {
+            *current_token += 1;
+            return Err(err);
+        }
+    }
+
     if let Some((TokenType::ELSE, _, _, _)) = tokens.get(*current_token) {
-        *current_token += 1;
-        let else_node = parse_statement(tokens, current_token)?;
+      //  *current_token += 1; // Consume ELSE token
+        let else_node = parse_else_statement(tokens, current_token)?;
         node.children.push(else_node);
+    }
+
+    Ok(node)
+}
+
+fn parse_else_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::ElseStatement);
+    match_token(tokens, TokenType::ELSE, current_token)?;
+    let statement_node = parse_statement(tokens, current_token);
+    match statement_node {
+        Ok(statement_node) => {
+            node.children.push(statement_node);
+        }
+        Err(err) => {
+            *current_token += 1;
+            return Err(err);
+        }
     }
     Ok(node)
 }
@@ -565,50 +568,17 @@ fn parse_if_statement(tokens: &[(TokenType, String, usize, usize)], current_toke
 
 fn parse_do_while_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::DoWhileStatement);
-
-    // Parse 'do' token
     match_token(tokens, TokenType::DO, current_token)?;
-
-    // Parse 'do' statement block
-    if let Some((TokenType::LBRACE, _, _, _)) = tokens.get(*current_token) {
-        *current_token += 1;
-        let mut statement_list_node = TreeNode::new(NodeType::Statement);
-        while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
-            match token_type {
-                TokenType::RBRACE => {
-                    *current_token += 1;
-                    break; // Exit the loop when encountering '}'
-                }
-                _ => {
-                    let statement_node_result = parse_statement(tokens, current_token);
-                    if let Ok(statement_node) = statement_node_result {
-                        statement_list_node.children.push(statement_node);
-                    } else {
-                        // Handle error in statement block
-                        let err = format!("Error en el bloque 'do': {}", statement_node_result.err().unwrap());
-                        *current_token += 1; // Skip to next token to attempt recovery
-                        return Err(err);
-                    }
-                }
-            }
-        }
-        node.children.push(statement_list_node);
-    } else {
-        return Err(format!("Error de sintaxis: se esperaba '{{' después de 'do' en la posición {:?}", *current_token));
-    }
-
-    // Parse 'while' token and condition
+    let statement_node = parse_statement(tokens, current_token)?;
+    node.children.push(statement_node);
     match_token(tokens, TokenType::WHILE, current_token)?;
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
-
-    // Check for ';'
     if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
         *current_token += 1;
     } else {
-        return Err(format!("Error de sintaxis: se esperaba ';' después de la condición 'while' en la posición {:?}", *current_token));
+        return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
     }
-
     Ok(node)
 }
 
@@ -638,7 +608,7 @@ fn parse_write_statement(tokens: &[(TokenType, String, usize, usize)], current_t
         return Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)));
     }
     if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
-        *current_token += 1; // Avanzar si hay un punto y coma
+        *current_token += 1;
         Ok(node)
     } else {
         Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
@@ -660,7 +630,7 @@ fn parse_read_statement(tokens: &[(TokenType, String, usize, usize)], current_to
         return Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)));
     }
     if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
-        *current_token += 1; // Avanzar si hay un punto y coma
+        *current_token += 1;
         Ok(node)
     } else {
         Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
@@ -763,7 +733,7 @@ fn parse_cin_statement(tokens: &[(TokenType, String, usize, usize)], current_tok
         return Err(format!("Error de sintaxis: se esperaba un identificador en la posición {:?}", tokens.get(*current_token)));
     }
     if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
-        *current_token += 1; // Avanzar si hay un punto y coma
+        *current_token += 1;
         Ok(node)
     } else {
         Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token))
@@ -919,21 +889,15 @@ fn parse_assignment(tokens: &[(TokenType, String, usize, usize)], current_token:
 
 #[tauri::command]
 fn parse(tokens: Vec<(TokenType, String, usize, usize)>) -> Result<(TreeNode, Vec<String>), String> {
-    // No necesitas llamar a get_token aquí porque ya tienes los tokens
-
-    // Convertir los errores léxicos en cadenas de texto y agregarlos al vector de errores
     let mut errors_str: Vec<String> = Vec::new();
-
     let mut current_token = 0;
     let syntax_tree = match parse_program(&tokens, &mut current_token, &mut errors_str) {
         Ok(tree) => tree,
         Err(err) => {
-            // Convertir el error del tipo Result<TreeNode, String> en una cadena y agregarlo al vector de errores
-            errors_str.push(err.to_string()); // Convertir a String antes de agregar
-            TreeNode::new(NodeType::Error) // Crear un nodo de error
+            errors_str.push(err.to_string());
+            TreeNode::new(NodeType::Error)
         }
     };
-
     Ok((syntax_tree, errors_str))
 }
 
