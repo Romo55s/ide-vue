@@ -432,15 +432,23 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
         }
         _ => {}
     }
+
+   // match tokens.get(*current_token) {
+    //    Some((TokenType::NumInt, _, _, _)) => {
+      //      println!("token with error: {:?}", tokens.get(*current_token));
+     //       return Err("Error de sintaxis: se esperaba un identificador con asignación antes".to_string());
+     //   }
+     //   _ => {}
+   // }
     
     match tokens.get(*current_token) {
         Some((TokenType::COLON, _, _, _)) => {
-            *current_token += 1;
-            TreeNode::new(NodeType::Error);
+            return Err("Error de sintaxis: token fuera de un case ':'".to_string());
         }
         _ => {}
     }
-    
+
+
     match tokens.get(*current_token) {
         Some((TokenType::IF, _, _, _)) => return parse_if_statement(tokens, current_token),
         Some((TokenType::WHILE, _, _, _)) => return parse_while_statement(tokens, current_token),
@@ -455,7 +463,7 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
         Some((TokenType::MAIN, _, _, _)) => return parse_main_function(tokens, current_token),
         Some((TokenType::INTEGER, _, _, _)) => return parse_int_variable_declaration(tokens, current_token),
         Some((TokenType::DOUBLE, _, _, _)) => return parse_double_variable_declaration(tokens, current_token),
-        Some((TokenType::ID, _, _, _)) | Some((TokenType::NumInt, _, _, _)) | Some((TokenType::NumReal, _, _, _)) => {
+        Some((TokenType::ID, _, _, _)) => {
             let assignment_node = parse_assignment(tokens, current_token)?;
             if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
                 *current_token += 1;
@@ -509,8 +517,6 @@ fn parse_double_variable_declaration(tokens: &[(TokenType, String, usize, usize)
     let mut node = TreeNode::new(NodeType::DoubleStatement);
 
     match_token(tokens, TokenType::DOUBLE, current_token)?;
-
-    // Parsear los identificadores
     loop {
         match tokens.get(*current_token) {
             Some((TokenType::ID, id, _, _)) => {
