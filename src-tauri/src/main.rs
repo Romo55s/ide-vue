@@ -443,6 +443,7 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
     
     match tokens.get(*current_token) {
         Some((TokenType::COLON, _, _, _)) => {
+            *current_token+=1;
             return Err("Error de sintaxis: token fuera de un case ':'".to_string());
         }
         _ => {}
@@ -552,19 +553,21 @@ fn parse_if_statement(tokens: &[(TokenType, String, usize, usize)], current_toke
     match_token(tokens, TokenType::IF, current_token)?;
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
-    match_token(tokens, TokenType::LBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::LBRACE, current_token) {
+        log_error(err.to_string());
+    }
     let statement_node = parse_statement(tokens, current_token);
     match statement_node {
         Ok(statement_node) => {
             node.children.push(statement_node);
         }
         Err(err) => {
-            println!("token before increment position: {:?}", tokens.get(*current_token));
-            println!("token after increment position: {:?}", tokens.get(*current_token));
             log_error(err.to_string());
         }
     }
-    match_token(tokens, TokenType::RBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
+        log_error(err.to_string());
+    }
     if let Some((TokenType::ELSE, _, _, _)) = tokens.get(*current_token) {
         let else_node = parse_else_statement(tokens, current_token);
         match else_node {
@@ -582,7 +585,9 @@ fn parse_if_statement(tokens: &[(TokenType, String, usize, usize)], current_toke
 fn parse_else_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::ElseStatement);
     match_token(tokens, TokenType::ELSE, current_token)?;
-    match_token(tokens, TokenType::LBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::LBRACE, current_token) {
+        log_error(err.to_string());
+    }
     let statement_node = parse_statement(tokens, current_token);
     match statement_node {
         Ok(statement_node) => {
@@ -600,7 +605,9 @@ fn parse_else_statement(tokens: &[(TokenType, String, usize, usize)], current_to
 fn parse_do_while_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::DoWhileStatement);
     match_token(tokens, TokenType::DO, current_token)?;
-    match_token(tokens, TokenType::LBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::LBRACE, current_token) {
+        log_error(err.to_string());
+    }
     let statement_node = parse_statement(tokens, current_token);
     match statement_node {
         Ok(statement_node) => {
@@ -610,7 +617,9 @@ fn parse_do_while_statement(tokens: &[(TokenType, String, usize, usize)], curren
             log_error(err.to_string());
         }
     }
-    match_token(tokens, TokenType::RBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
+        log_error(err.to_string());
+    }
     match_token(tokens, TokenType::WHILE, current_token)?;
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
@@ -628,7 +637,9 @@ fn parse_while_statement(tokens: &[(TokenType, String, usize, usize)], current_t
     match_token(tokens, TokenType::WHILE, current_token)?;
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
-    match_token(tokens, TokenType::LBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::LBRACE, current_token) {
+        log_error(err.to_string());
+    }
     let statement_node = parse_statement(tokens, current_token);
     match statement_node {
         Ok(statement_node) => {
@@ -645,7 +656,9 @@ fn parse_while_statement(tokens: &[(TokenType, String, usize, usize)], current_t
 fn parse_repeat_until_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::RepeatUntilStatement);
     match_token(tokens, TokenType::REPEAT, current_token)?;
-    match_token(tokens, TokenType::LBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::LBRACE, current_token) {
+        log_error(err.to_string());
+    }
     let statement_node = parse_statement(tokens, current_token);
     match statement_node {
         Ok(statement_node) => {
@@ -655,7 +668,9 @@ fn parse_repeat_until_statement(tokens: &[(TokenType, String, usize, usize)], cu
             log_error(err.to_string());
         }
     }
-    match_token(tokens, TokenType::RBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
+        log_error(err.to_string());
+    }
     match_token(tokens, TokenType::UNTIL, current_token)?;
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
@@ -672,7 +687,9 @@ fn parse_switch_statement(tokens: &[(TokenType, String, usize, usize)], current_
     match_token(tokens, TokenType::SWITCH, current_token)?;
     let expression_node = parse_expression(tokens, current_token)?;
     node.children.push(expression_node);
-    match_token(tokens, TokenType::LBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::LBRACE, current_token) {
+        log_error(err.to_string());
+    }
     while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
         match token_type {
             TokenType::CASE => {
@@ -695,7 +712,9 @@ fn parse_case_statement(tokens: &[(TokenType, String, usize, usize)], current_to
     match_token(tokens, TokenType::CASE, current_token)?;
     let value_node = parse_expression(tokens, current_token)?;
     node.children.push(value_node);
-    match_token(tokens, TokenType::COLON,current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::COLON, current_token) {
+        log_error(err.to_string());
+    }
     while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
         if token_type == &TokenType::END || token_type == &TokenType::CASE {
             break;
@@ -718,9 +737,15 @@ fn parse_case_statement(tokens: &[(TokenType, String, usize, usize)], current_to
 fn parse_main_function(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::MainFunction);
     match_token(tokens, TokenType::MAIN, current_token)?;
-    match_token(tokens, TokenType::LPAREN, current_token)?;
-    match_token(tokens, TokenType::RPAREN, current_token)?;
-    match_token(tokens, TokenType::LBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::LPAREN, current_token) {
+        log_error(err.to_string());
+    }
+    if  let Err(err) = match_token(tokens, TokenType::RPAREN, current_token) {
+        log_error(err.to_string());
+    }
+    if  let Err(err) = match_token(tokens, TokenType::LBRACE, current_token) {
+        log_error(err.to_string());
+    }
     let statement_node = parse_statement(tokens, current_token);
     match statement_node {
         Ok(statement_node) => {
@@ -930,7 +955,9 @@ fn parse_factor(tokens: &[(TokenType, String, usize, usize)], current_token: &mu
             TokenType::LPAREN => {
                 *current_token += 1;
                 let expression_node = parse_expression(tokens, current_token)?;
-                match_token(tokens, TokenType::RPAREN, current_token)?;
+                if  let Err(err) = match_token(tokens, TokenType::RPAREN, current_token) {
+                    log_error(err.to_string());
+                }
                 node.children.push(expression_node);
                 Ok(node)
             }
@@ -951,7 +978,9 @@ fn parse_assignment(tokens: &[(TokenType, String, usize, usize)], current_token:
             children: Vec::new(),
         });
         *current_token += 1;
-        match_token(tokens, TokenType::ASSIGN, current_token)?;
+        if  let Err(err) = match_token(tokens, TokenType::ASSIGN, current_token) {
+            log_error(err.to_string());
+        }
         let expression_node = parse_expression(tokens, current_token)?;
         node.children.push(expression_node);
         Ok(node)
