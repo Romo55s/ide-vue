@@ -473,8 +473,20 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
                 return Err(format!("Error de sintaxis: se esperaba ';' en la posición {:?}", *current_token));
             }
         }
-        _ => return Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token))),
+        _ => if is_part_of_expression(tokens, current_token) {
+            println!("token: {:?}",tokens.get(*current_token));
+            return Err(format!("Error de sintaxis: se esperaba una asignación a un identificador antes de la posición {:?}", tokens.get(*current_token)));
+        } else {
+            return Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token)));
+        },
     }
+}
+
+fn is_part_of_expression(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> bool {
+    if parse_expression(tokens, current_token).is_ok() {
+        return true;
+    }
+    false
 }
 
 
