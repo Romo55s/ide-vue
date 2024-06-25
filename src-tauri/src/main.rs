@@ -609,7 +609,9 @@ fn parse_else_statement(tokens: &[(TokenType, String, usize, usize)], current_to
             log_error(err.to_string());
         }
     }
-    match_token(tokens, TokenType::RBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
+        log_error(err.to_string());
+    }
     Ok(node)
 }
 
@@ -632,7 +634,9 @@ fn parse_do_while_statement(tokens: &[(TokenType, String, usize, usize)], curren
     if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
         log_error(err.to_string());
     }
-    match_token(tokens, TokenType::WHILE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::WHILE, current_token) {
+        log_error(err.to_string());
+    }
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
     if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
@@ -661,7 +665,9 @@ fn parse_while_statement(tokens: &[(TokenType, String, usize, usize)], current_t
             log_error(err.to_string());
         }
     }
-    match_token(tokens, TokenType::RBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
+        log_error(err.to_string());
+    }
     Ok(node)
 }
 
@@ -683,7 +689,9 @@ fn parse_repeat_until_statement(tokens: &[(TokenType, String, usize, usize)], cu
     if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
         log_error(err.to_string());
     }
-    match_token(tokens, TokenType::UNTIL, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::UNTIL, current_token) {
+        log_error(err.to_string());
+    }
     let condition_node = parse_expression(tokens, current_token)?;
     node.children.push(condition_node);
     if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
@@ -702,20 +710,32 @@ fn parse_switch_statement(tokens: &[(TokenType, String, usize, usize)], current_
     if  let Err(err) = match_token(tokens, TokenType::LBRACE, current_token) {
         log_error(err.to_string());
     }
+    let mut case_found = false;
+    let mut end_found = false;
     while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
         match token_type {
             TokenType::CASE => {
+                case_found = true;
                 let case_node = parse_case_statement(tokens, current_token)?;
                 node.children.push(case_node);
             }
             TokenType::END => {
+                end_found = true;
                 *current_token += 1;
                 break;
             }
             _ => return Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token))),
         }
     }
-    match_token(tokens, TokenType::RBRACE, current_token)?;
+    if !case_found {
+        return Err("Error de sintaxis: se esperaba la palabra reservada 'CASE' en el bloque switch".to_string());
+    }
+    if !end_found {
+        return Err("Error de sintaxis: se esperaba la palabra reservada 'END' en el bloque switch".to_string());
+    }
+    if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
+        log_error(err.to_string());
+    }
     Ok(node)
 }
 
@@ -767,7 +787,9 @@ fn parse_main_function(tokens: &[(TokenType, String, usize, usize)], current_tok
             log_error(err.to_string());
         }
     }
-    match_token(tokens, TokenType::RBRACE, current_token)?;
+    if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
+        log_error(err.to_string());
+    }
     Ok(node)
 }
 
