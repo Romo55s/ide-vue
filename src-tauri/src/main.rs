@@ -17,9 +17,6 @@ enum TokenType {
     ELSE,
     DO,
     WHILE,
-    SWITCH,
-    CASE,
-    END,
     REPEAT,
     UNTIL,
     READ,
@@ -106,6 +103,7 @@ enum NodeType {
     RepeatUntilStatement,
     SwitchStatement,
     CaseStatement,
+    DefaultStatement,
     MainFunction,
     ReturnStatement,
     CinStatement,
@@ -173,9 +171,6 @@ fn reserved_lookup(s: &str) -> TokenType {
         "else" => TokenType::ELSE,
         "do" => TokenType::DO,
         "while" => TokenType::WHILE,
-        "switch" => TokenType::SWITCH,
-        "case" => TokenType::CASE,
-        "end" => TokenType::END,
         "repeat" => TokenType::REPEAT,
         "until" => TokenType::UNTIL,
         "read" => TokenType::READ,
@@ -433,14 +428,6 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
         _ => {}
     }
 
-   // match tokens.get(*current_token) {
-    //    Some((TokenType::NumInt, _, _, _)) => {
-      //      println!("token with error: {:?}", tokens.get(*current_token));
-     //       return Err("Error de sintaxis: se esperaba un identificador con asignación antes".to_string());
-     //   }
-     //   _ => {}
-   // }
-    
     match tokens.get(*current_token) {
         Some((TokenType::COLON, _, _, _)) => {
             *current_token+=1;
@@ -457,7 +444,6 @@ fn parse_statement(tokens: &[(TokenType, String, usize, usize)], current_token: 
         Some((TokenType::READ, _, _, _)) => return parse_read_statement(tokens, current_token),
         Some((TokenType::DO, _, _, _)) => return parse_do_while_statement(tokens, current_token),
         Some((TokenType::REPEAT, _, _, _)) => return parse_repeat_until_statement(tokens, current_token),
-        Some((TokenType::SWITCH, _, _, _)) => return parse_switch_statement(tokens, current_token),
         Some((TokenType::RETURN, _, _, _)) => return parse_return_statement(tokens, current_token),
         Some((TokenType::CIN, _, _, _)) => return parse_cin_statement(tokens, current_token),
         Some((TokenType::COUT, _, _, _)) => return parse_cout_statement(tokens, current_token),
@@ -701,70 +687,6 @@ fn parse_repeat_until_statement(tokens: &[(TokenType, String, usize, usize)], cu
     }
     Ok(node)
 }
-
-fn parse_switch_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
-    let mut node = TreeNode::new(NodeType::SwitchStatement);
-    match_token(tokens, TokenType::SWITCH, current_token)?;
-    let expression_node = parse_expression(tokens, current_token)?;
-    node.children.push(expression_node);
-    if  let Err(err) = match_token(tokens, TokenType::LBRACE, current_token) {
-        log_error(err.to_string());
-    }
-    let mut case_found = false;
-    let mut end_found = false;
-    while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
-        match token_type {
-            TokenType::CASE => {
-                case_found = true;
-                let case_node = parse_case_statement(tokens, current_token)?;
-                node.children.push(case_node);
-            }
-            TokenType::END => {
-                end_found = true;
-                *current_token += 1;
-                break;
-            }
-            _ => return Err(format!("Error de sintaxis: token inesperado {:?}", tokens.get(*current_token))),
-        }
-    }
-    if !case_found {
-        return Err("Error de sintaxis: se esperaba la palabra reservada 'CASE' en el bloque switch".to_string());
-    }
-    if !end_found {
-        return Err("Error de sintaxis: se esperaba la palabra reservada 'END' en el bloque switch".to_string());
-    }
-    if  let Err(err) = match_token(tokens, TokenType::RBRACE, current_token) {
-        log_error(err.to_string());
-    }
-    Ok(node)
-}
-
-fn parse_case_statement(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
-    let mut node = TreeNode::new(NodeType::CaseStatement);
-    match_token(tokens, TokenType::CASE, current_token)?;
-    let value_node = parse_expression(tokens, current_token)?;
-    node.children.push(value_node);
-    if  let Err(err) = match_token(tokens, TokenType::COLON, current_token) {
-        log_error(err.to_string());
-    }
-    while let Some((token_type, _, _, _)) = tokens.get(*current_token) {
-        if token_type == &TokenType::END || token_type == &TokenType::CASE {
-            break;
-        } else {
-                let statement_node = parse_statement(tokens, current_token);
-                match statement_node {
-                    Ok(statement_node) => {
-                        node.children.push(statement_node);
-                    }
-                    Err(err) => {
-                        log_error(err.to_string());
-                    }
-                }
-        }
-    }
-    Ok(node)
-}
-
 
 fn parse_main_function(tokens: &[(TokenType, String, usize, usize)], current_token: &mut usize) -> Result<TreeNode, String> {
     let mut node = TreeNode::new(NodeType::MainFunction);
