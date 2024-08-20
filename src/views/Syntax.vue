@@ -98,3 +98,4 @@ const redirectToAnotherView = (): void => {
 onMounted(generateSyntaxTree);
 </script>
 
+
