@@ -12,6 +12,31 @@ lazy_static! {
     pub static ref ERRORS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 }
 
+fn main() {
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            save_file,
+            remove_file,
+            lexic,
+            parse
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+#[tauri::command]
+fn lexic(
+    content: String,
+) -> Result<
+    (
+        Vec<(TokenType, String, usize, usize)>,
+        Vec<(TokenType, String, usize, usize)>,
+    ),
+    String,
+> {
+    Ok(get_token(&content))
+}
+
 #[tauri::command]
 fn parse(
     tokens: Vec<(TokenType, String, usize, usize)>,
@@ -37,18 +62,6 @@ fn parse(
     Ok((syntax_tree, errors_str))
 }
 
-fn main() {
-    tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![
-            save_file,
-            remove_file,
-            lexic,
-            parse
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-
 #[tauri::command]
 fn save_file(path: String, contents: String) -> Result<(), String> {
     match save_file_or_save_as(&path, &contents) {
@@ -69,17 +82,4 @@ fn save_file_or_save_as(path: &str, contents: &str) -> Result<(), std::io::Error
     let mut file = fs::File::create(path)?;
     file.write_all(contents.as_bytes())?;
     Ok(())
-}
-
-#[tauri::command]
-fn lexic(
-    content: String,
-) -> Result<
-    (
-        Vec<(TokenType, String, usize, usize)>,
-        Vec<(TokenType, String, usize, usize)>,
-    ),
-    String,
-> {
-    Ok(get_token(&content))
 }
