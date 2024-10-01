@@ -1,17 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use ::lazy_static::lazy_static;
-use app::globals::{log_error, NodeType, TokenType, TreeNode};
+use app::globals::{log_error, NodeType, TokenType, TreeNode, ERRORS};
 use app::lexer::get_token;
 use app::parser::parse_program;
 use std::fs;
 use std::io::Write;
-use std::sync::Mutex; // Importa el trait Write
-lazy_static! {
-    pub static ref ERRORS: Mutex<Vec<String>> = Mutex::new(Vec::new());
-}
-
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -83,3 +77,4 @@ fn save_file_or_save_as(path: &str, contents: &str) -> Result<(), std::io::Error
     file.write_all(contents.as_bytes())?;
     Ok(())
 }
+
