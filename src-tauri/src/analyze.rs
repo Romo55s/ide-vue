@@ -13,15 +13,21 @@ pub fn type_error(t: &TreeNode, message: &str) {
 
 // Procedimiento para insertar identificadores en la tabla de símbolos
 fn insert_node(t: Rc<RefCell<TreeNode>>) {
-    match t.borrow().node_type {
-        NodeType::Assignment | NodeType::ReadStatement => {
+    let node_type = t.borrow().node_type.clone();
+    
+    match node_type {
+        NodeType::Assignment | 
+        NodeType::ReadStatement |
+        NodeType::WriteStatement => {
             let name = t.borrow().value.clone().unwrap();
             let lineno = t.borrow().value.clone().unwrap().parse::<i32>().unwrap();
             unsafe {
                 if st_lookup(&name) == -1 {
+                    // No está en la tabla, se trata como una nueva definición
                     st_insert(&name, lineno, LOCATION);
                     LOCATION += 1;
                 } else {
+                    // Ya está en la tabla, solo se agrega la línea de uso
                     st_insert(&name, lineno, 0);
                 }
             }
@@ -32,9 +38,11 @@ fn insert_node(t: Rc<RefCell<TreeNode>>) {
                 let lineno = t.borrow().value.clone().unwrap().parse::<i32>().unwrap();
                 unsafe {
                     if st_lookup(&name) == -1 {
+                        // No está en la tabla, se trata como una nueva definición
                         st_insert(&name, lineno, LOCATION);
                         LOCATION += 1;
                     } else {
+                        // Ya está en la tabla, solo se agrega la línea de uso
                         st_insert(&name, lineno, 0);
                     }
                 }
@@ -74,46 +82,53 @@ fn check_node(t: Rc<RefCell<TreeNode>>) {
     match t.borrow().node_type {
         NodeType::Expression => {
             if let Some(TokenType::PLUS) |
-             Some(TokenType::MINUS) | 
-             Some(TokenType::TIMES) | 
-             Some(TokenType::DIVIDE) |
-             Some(TokenType::MODULO) |
-             Some(TokenType::POWER) |
-             = t.borrow().token {
-                let left_type = t.borrow().children[0].node_type.clone();
-                let right_type = t.borrow().children[1].node_type.clone();
+                Some(TokenType::MINUS) | 
+                Some(TokenType::TIMES) | 
+                Some(TokenType::DIVIDE) |
+                Some(TokenType::MODULO) |
+                Some(TokenType::POWER) = t.borrow().token {
+                
+                let left_type = t.borrow().children[0].borrow().node_type.clone();
+                let right_type = t.borrow().children[1].borrow().node_type.clone();
+                
                 if left_type != NodeType::Expression || right_type != NodeType::Expression {
                     type_error(&t.borrow(), "Operador aplicado a no números");
                 }
-                if let Some(TokenType::EQ) | 
-                Some(TokenType::NEQ) |
-                Some(TokenType::LT) |
-                Some(TokenType::LTE) |
-                Some(TokenType:GT) |
-                Some(TokenType::GTE) |
-                 = t.borrow().token {
+
+                if matches!(t.borrow().token,
+                Some(TokenType::EQ) | 
+                Some(TokenType::NEQ) | 
+                Some(TokenType::LT) | 
+                Some(TokenType::LTE) | 
+                Some(TokenType::GT) | 
+                Some(TokenType::GTE)) {
                     t.borrow_mut().node_type = NodeType::Error;
                 }
             }
         }
         NodeType::IfStatement => {
-            if t.borrow().children[0].node_type != NodeType::Expression {
+            if t.borrow().children[0].borrow().node_type != NodeType::Expression {
                 type_error(&t.borrow().children[0], "La condición del 'if' no es booleana");
             }
         }
         NodeType::Assignment => {
-            if t.borrow().children[0].node_type != NodeType::Expression {
-                type_error(&t.borrow().children[0], "Asignación de valor no entero");
+            if t.borrow().children[0].borrow().node_type != NodeType::Expression {
+                type_error(&t.borrow().children[0], "Asignación de valor no válido");
             }
         }
         NodeType::WriteStatement => {
-            if t.borrow().children[0].node_type != NodeType::Expression {
-                type_error(&t.borrow().children[0], "Escritura de valor no entero");
+            if t.borrow().children[0].borrow().node_type != NodeType::Expression {
+                type_error(&t.borrow().children[0], "Escritura de valor no válido");
             }
         }
         NodeType::DoWhileStatement => {
-            if t.borrow().children[1].node_type == NodeType::Expression {
+            if t.borrow().children[1].borrow().node_type != NodeType::Expression {
                 type_error(&t.borrow().children[1], "La condición del 'do-while' no es booleana");
+            }
+        }
+        NodeType::RepeatUntilStatement => {
+            if t.borrow().children[1].borrow().node_type != NodeType::Expression {
+                type_error(&t.borrow().children[1], "La condición del 'repeat-until' no es booleana");
             }
         }
         _ => {}
