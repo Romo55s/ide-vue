@@ -88,4 +88,54 @@ impl SymbolTable {
         new_bucket.borrow_mut().next = self.table[h].clone(); // Insert at the head of the list
         self.table[h] = Some(new_bucket);
     }
+    /* Función st_lookup devuelve la ubicación de memoria
+     * de una variable o -1 si no se encuentra
+     */
+    pub fn st_lookup(&self, name: &str) -> i32 {
+        let h = hash(name);
+        let mut l = self.table[h].clone();
+
+        while let Some(ref bucket) = l {
+            if bucket.borrow().name == name {
+                return bucket.borrow().memloc;
+            }
+            l = bucket.borrow().next.clone();
+        }
+
+        -1
+    }
+
+    /* Procedimiento printSymTab imprime una lista formateada
+     * del contenido de la tabla de símbolos
+     */
+    pub fn print_symtab(&self) {
+        println!(
+            "{:14}  {:8}  {}",
+            "Variable Name", "Location", "Line Numbers"
+        );
+        println!(
+            "{:14}  {:8}  {}",
+            "-------------", "--------", "------------"
+        );
+
+        for i in 0..SIZE {
+            if let Some(ref bucket) = self.table[i] {
+                let mut b = Some(bucket.clone());
+                while let Some(ref current) = b {
+                    let mut lines = current.borrow().lines.clone();
+                    print!(
+                        "{:14}  {:8}  ",
+                        current.borrow().name,
+                        current.borrow().memloc
+                    );
+                    while let Some(ref line) = lines {
+                        print!("{:4} ", line.borrow().lineno);
+                        lines = line.borrow().next.clone();
+                    }
+                    println!();
+                    b = current.borrow().next.clone();
+                }
+            }
+        }
+    }
 }
