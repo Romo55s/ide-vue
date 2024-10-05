@@ -62,90 +62,30 @@ struct SymbolTable {
 }
 
 impl SymbolTable {
-    fn new() -> Self {
-        SymbolTable {
-            table: vec![None; SIZE],
-        }
-    }
-
-    /* Procedimiento st_insert inserta números de línea y ubicaciones
-     * de memoria en la tabla de símbolos.
-     * loc = ubicación de memoria que se inserta solo la
-     * primera vez, de lo contrario se ignora
-     */
     pub fn st_insert(&mut self, name: &str, lineno: i32, loc: i32) {
         let h = hash(name);
-        let mut l = self.table[h].clone();
+        let mut l = self.table[h].clone(); // Cloning the Option<Rc<RefCell<BucketList>>>
 
+        // Search the bucket list for the name
         while let Some(ref bucket) = l {
             if bucket.borrow().name == name {
-                break;
-            }
-            l = bucket.borrow().next.clone();
-        }
+                // The name is already in the table, we just add a new line number
+                let mut lines = bucket.borrow().lines.clone(); // Clone the Rc<RefCell<LineList>>
 
-        if l.is_none() {
-            let new_bucket = BucketList::new(name.to_string(), lineno, loc);
-            new_bucket.borrow_mut().next = self.table[h].clone();
-            self.table[h] = Some(new_bucket);
-        } else {
-            let bucket = l.unwrap();
-            let mut lines = bucket.borrow().lines.clone();
-            while lines.borrow().next.is_some() {
-                lines = lines.borrow().next.clone().unwrap();
-            }
-            lines.borrow_mut().next = Some(LineList::new(lineno));
-        }
-    }
-
-    /* Función st_lookup devuelve la ubicación de memoria
-     * de una variable o -1 si no se encuentra
-     */
-    pub fn st_lookup(&self, name: &str) -> i32 {
-        let h = hash(name);
-        let mut l = self.table[h].clone();
-
-        while let Some(ref bucket) = l {
-            if bucket.borrow().name == name {
-                return bucket.borrow().memloc;
-            }
-            l = bucket.borrow().next.clone();
-        }
-
-        -1
-    }
-
-    /* Procedimiento printSymTab imprime una lista formateada
-     * del contenido de la tabla de símbolos
-     */
-    pub fn print_symtab(&self) {
-        println!(
-            "{:14}  {:8}  {}",
-            "Variable Name", "Location", "Line Numbers"
-        );
-        println!(
-            "{:14}  {:8}  {}",
-            "-------------", "--------", "------------"
-        );
-
-        for i in 0..SIZE {
-            if let Some(ref bucket) = self.table[i] {
-                let mut b = Some(bucket.clone());
-                while let Some(ref current) = b {
-                    let mut lines = current.borrow().lines.clone();
-                    print!(
-                        "{:14}  {:8}  ",
-                        current.borrow().name,
-                        current.borrow().memloc
-                    );
-                    while let Some(ref line) = lines {
-                        print!("{:4} ", line.borrow().lineno);
-                        lines = line.borrow().next.clone();
-                    }
-                    println!();
-                    b = current.borrow().next.clone();
+                // Traverse the line list to append the new line number
+                while lines.borrow().next.is_some() {
+                    let next = lines.borrow().next.clone().unwrap();
+                    lines = next;
                 }
+                lines.borrow_mut().next = Some(LineList::new(lineno));
+                return;
             }
+            l = bucket.borrow().next.clone();
         }
+
+        // If not found, insert new bucket
+        let new_bucket = BucketList::new(name.to_string(), lineno, loc);
+        new_bucket.borrow_mut().next = self.table[h].clone(); // Insert at the head of the list
+        self.table[h] = Some(new_bucket);
     }
 }
