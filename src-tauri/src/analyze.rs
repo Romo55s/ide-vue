@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use crate::globals::{NodeType, TokenType, TreeNode};
-use crate::symTab::{st_insert, st_lookup, print_sym_tab};
+use crate::symTab::{insert, lookup, print};
 
 // Estado inicial para la ubicación de memoria de las variables
 static mut LOCATION: i32 = 0;
@@ -22,13 +22,13 @@ fn insert_node(t: Rc<RefCell<TreeNode>>) {
             let name = t.borrow().value.clone().unwrap();
             let lineno = t.borrow().value.clone().unwrap().parse::<i32>().unwrap();
             unsafe {
-                if st_lookup(&name) == -1 {
+                if lookup(&name) == -1 {
                     // No está en la tabla, se trata como una nueva definición
-                    st_insert(&name, lineno, LOCATION);
+                    insert(&name, lineno, LOCATION);
                     LOCATION += 1;
                 } else {
                     // Ya está en la tabla, solo se agrega la línea de uso
-                    st_insert(&name, lineno, 0);
+                    insert(&name, lineno, 0);
                 }
             }
         }
@@ -37,13 +37,13 @@ fn insert_node(t: Rc<RefCell<TreeNode>>) {
                 let name = t.borrow().value.clone().unwrap();
                 let lineno = t.borrow().value.clone().unwrap().parse::<i32>().unwrap();
                 unsafe {
-                    if st_lookup(&name) == -1 {
+                    if lookup(&name) == -1 {
                         // No está en la tabla, se trata como una nueva definición
-                        st_insert(&name, lineno, LOCATION);
+                        insert(&name, lineno, LOCATION);
                         LOCATION += 1;
                     } else {
                         // Ya está en la tabla, solo se agrega la línea de uso
-                        st_insert(&name, lineno, 0);
+                        insert(&name, lineno, 0);
                     }
                 }
             }
@@ -74,7 +74,7 @@ fn traverse(
 // Procedimiento que construye la tabla de símbolos recorriendo el AST en preorden
 pub fn build_symtab(syntax_tree: Option<Rc<RefCell<TreeNode>>>) {
     traverse(syntax_tree, Some(&insert_node), None);
-    print_sym_tab();
+    print();
 }
 
 // Procedimiento para verificar el tipo de un nodo específico
