@@ -1,9 +1,6 @@
 use crate::globals::{NodeType, TokenType, TreeNode};
 use crate::symTab::{insert, lookup, print};
 
-// Estado inicial para la ubicación de memoria de las variables
-static mut LOCATION: i32 = 0;
-
 // Estructura para manejar el tipo de error en los nodos
 pub fn type_error(t: &TreeNode, message: &str) {
     println!("Type error en la línea {}: {}", t.value.clone().unwrap_or_default(), message);
