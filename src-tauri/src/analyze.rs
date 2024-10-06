@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use crate::globals::{NodeType, TokenType, TreeNode};
 use crate::symTab::{insert, lookup, print};
 
@@ -11,131 +9,155 @@ pub fn type_error(t: &TreeNode, message: &str) {
     println!("Type error en la línea {}: {}", t.value.clone().unwrap_or_default(), message);
 }
 
-// Procedimiento para insertar identificadores en la tabla de símbolos
-fn insert_node(t: Rc<RefCell<TreeNode>>) {
-    let node_type = t.borrow().node_type.clone();
-    
-    match node_type {
-        NodeType::Assignment | 
-        NodeType::ReadStatement |
-        NodeType::WriteStatement => {
-            let name = t.borrow().value.clone().unwrap();
-            let lineno = t.borrow().value.clone().unwrap().parse::<i32>().unwrap();
-            unsafe {
-                if lookup(&name) == -1 {
-                    // No está en la tabla, se trata como una nueva definición
-                    insert(&name, lineno, LOCATION);
-                    LOCATION += 1;
-                } else {
-                    // Ya está en la tabla, solo se agrega la línea de uso
-                    insert(&name, lineno, 0);
-                }
-            }
-        }
-        NodeType::Expression => {
-            if let Some(TokenType::ID) = t.borrow().token {
-                let name = t.borrow().value.clone().unwrap();
-                let lineno = t.borrow().value.clone().unwrap().parse::<i32>().unwrap();
-                unsafe {
-                    if lookup(&name) == -1 {
-                        // No está en la tabla, se trata como una nueva definición
-                        insert(&name, lineno, LOCATION);
-                        LOCATION += 1;
-                    } else {
-                        // Ya está en la tabla, solo se agrega la línea de uso
-                        insert(&name, lineno, 0);
-                    }
-                }
-            }
-        }
-        _ => {}
-    }
-}
 
 // Función para recorrer el árbol de sintaxis abstracta en preorden y postorden
 fn traverse(
-    t: Option<Rc<RefCell<TreeNode>>>,
-    pre_proc: Option<&dyn Fn(Rc<RefCell<TreeNode>>)>,
-    post_proc: Option<&dyn Fn(Rc<RefCell<TreeNode>>)>,
+    t: Option<&TreeNode>,
+    pre_proc: Option<&dyn Fn(&TreeNode)>,
+    post_proc: Option<&dyn Fn(&TreeNode)>,
 ) {
     if let Some(node) = t {
         if let Some(pre) = pre_proc {
-            pre(node.clone());
+            pre(node);
         }
-        for child in node.borrow().children.iter() {
-            traverse(Some(Rc::new(RefCell::new(child.clone()))), pre_proc, post_proc);
+
+        for child in &node.children {
+            traverse(Some(child), pre_proc, post_proc);
         }
+
         if let Some(post) = post_proc {
             post(node);
         }
     }
 }
 
-// Procedimiento que construye la tabla de símbolos recorriendo el AST en preorden
-pub fn build_symtab(syntax_tree: Option<Rc<RefCell<TreeNode>>>) {
-    traverse(syntax_tree, Some(&insert_node), None);
-    print();
+// Función para insertar nodos en la tabla de símbolos
+fn insert_node(t: &TreeNode, symbol_table: &mut SymbolTable) {
+    match t.node_type {
+        // Para nodos de asignación, lectura y escritura
+        NodeType::Assignment 
+        | NodeType::ReadStatement 
+        | NodeType::WriteStatement => {
+            if let Some(ref name) = t.value {
+                let lineno = t.token.unwrap() as usize;
+                
+                // Busca en la tabla de símbolos. Si no está, lo inserta.
+                let loc = symbol_table.lookup(name).unwrap_or_else(|| {
+                    let new_loc = symbol_table.next_location();
+                    symbol_table.insert(name, lineno, new_loc);
+                    new_loc
+                });
+                
+                // Inserta o actualiza el símbolo con la línea de uso
+                symbol_table.insert(name, lineno, loc);
+            }
+        }
+
+        // Para expresiones que son identificadores
+        NodeType::Expression => {
+            if let Some(TokenType::ID) = t.token {
+                if let Some(ref name) = t.value {
+                    let lineno = t.token.unwrap() as usize;
+                    
+                    // Busca en la tabla de símbolos. Si no está, lo inserta.
+                    let loc = symbol_table.lookup(name).unwrap_or_else(|| {
+                        let new_loc = symbol_table.next_location();
+                        symbol_table.insert(name, lineno, new_loc);
+                        new_loc
+                    });
+                    
+                    // Inserta o actualiza el símbolo con la línea de uso
+                    symbol_table.insert(name, lineno, loc);
+                }
+            }
+        }
+        // Otros tipos de nodos no requieren inserción en la tabla de símbolos
+        _ => {}
+    }
 }
 
-// Procedimiento para verificar el tipo de un nodo específico
-fn check_node(t: Rc<RefCell<TreeNode>>) {
-    match t.borrow().node_type {
-        NodeType::Expression => {
-            if let Some(TokenType::PLUS) |
-                Some(TokenType::MINUS) | 
-                Some(TokenType::TIMES) | 
-                Some(TokenType::DIVIDE) |
-                Some(TokenType::MODULO) |
-                Some(TokenType::POWER) = t.borrow().token {
-                
-                let left_type = t.borrow().children[0].borrow().node_type.clone();
-                let right_type = t.borrow().children[1].borrow().node_type.clone();
-                
-                if left_type != NodeType::Expression || right_type != NodeType::Expression {
-                    type_error(&t.borrow(), "Operador aplicado a no números");
-                }
+// Procedimiento que construye la tabla de símbolos recorriendo el AST en preorden
+pub fn build_symtab(syntax_tree: &TreeNode, symbol_table: &mut SymbolTable) {
+    traverse(
+        Some(syntax_tree),
+        Some(&|node| insert_node(node, symbol_table)),
+        None,
+    );
+    symbol_table.print();
+}
 
-                if matches!(t.borrow().token,
-                Some(TokenType::EQ) | 
-                Some(TokenType::NEQ) | 
-                Some(TokenType::LT) | 
-                Some(TokenType::LTE) | 
-                Some(TokenType::GT) | 
-                Some(TokenType::GTE)) {
-                    t.borrow_mut().node_type = NodeType::Error;
+fn check_node(t: &TreeNode) {
+    match t.node_type {
+        NodeType::Expression => {
+            if let Some(token) = &t.token {
+                match token {
+                    TokenType::PLUS |
+                    TokenType::MINUS |
+                    TokenType::TIMES |
+                    TokenType::DIVIDE |
+                    TokenType::MODULO |
+                    TokenType::POWER => {
+                        
+                        let left_type = &t.children[0].node_type;
+                        let right_type = &t.children[1].node_type;
+
+                        // Verificar que los operandos sean expresiones válidas
+                        if left_type != &NodeType::Expression || right_type != &NodeType::Expression {
+                            type_error(t, "Operador aplicado a no números");
+                        }
+
+                        // Verificación de operadores relacionales
+                        if matches!(
+                            t.token,
+                            Some(TokenType::EQ) |
+                            Some(TokenType::NEQ) |
+                            Some(TokenType::LT) |
+                            Some(TokenType::LTE) |
+                            Some(TokenType::GT) |
+                            Some(TokenType::GTE)
+                        ) {
+                            // Si es un operador relacional, establecemos el tipo de nodo como Error
+                            t.borrow_mut().node_type = NodeType::Error;
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
         NodeType::IfStatement => {
-            if t.borrow().children[0].borrow().node_type != NodeType::Expression {
-                type_error(&t.borrow().children[0], "La condición del 'if' no es booleana");
+            // Verificación de que la condición del if sea una expresión válida
+            if t.children[0].node_type != NodeType::Expression {
+                type_error(&t.children[0], "La condición del 'if' no es booleana");
             }
         }
         NodeType::Assignment => {
-            if t.borrow().children[0].borrow().node_type != NodeType::Expression {
-                type_error(&t.borrow().children[0], "Asignación de valor no válido");
+            // Verificación de que la asignación sea de un valor válido
+            if t.children[0].node_type != NodeType::Expression {
+                type_error(&t.children[0], "Asignación de valor no válido");
             }
         }
         NodeType::WriteStatement => {
-            if t.borrow().children[0].borrow().node_type != NodeType::Expression {
-                type_error(&t.borrow().children[0], "Escritura de valor no válido");
+            // Verificación de que el valor a escribir sea válido
+            if t.children[0].node_type != NodeType::Expression {
+                type_error(&t.children[0], "Escritura de valor no válido");
             }
         }
         NodeType::DoWhileStatement => {
-            if t.borrow().children[1].borrow().node_type != NodeType::Expression {
-                type_error(&t.borrow().children[1], "La condición del 'do-while' no es booleana");
+            // Verificación de que la condición del do-while sea booleana
+            if t.children[1].node_type != NodeType::Expression {
+                type_error(&t.children[1], "La condición del 'do-while' no es booleana");
             }
         }
         NodeType::RepeatUntilStatement => {
-            if t.borrow().children[1].borrow().node_type != NodeType::Expression {
-                type_error(&t.borrow().children[1], "La condición del 'repeat-until' no es booleana");
+            // Verificación de que la condición del repeat-until sea booleana
+            if t.children[1].node_type != NodeType::Expression {
+                type_error(&t.children[1], "La condición del 'repeat-until' no es booleana");
             }
         }
         _ => {}
     }
 }
-
 // Procedimiento para realizar la verificación de tipos
-pub fn type_check(syntax_tree: Option<Rc<RefCell<TreeNode>>>) {
+pub fn type_check(syntax_tree: Option<&TreeNode>) {
     traverse(syntax_tree, None, Some(&check_node));
 }
