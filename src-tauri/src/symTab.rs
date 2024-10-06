@@ -19,12 +19,14 @@ pub struct BucketList {
 // Implementación de la tabla de símbolos
 pub struct SymbolTable {
     table: Vec<Option<BucketList>>, // Cambiado a Vec para una mejor gestión
+    next_loc: usize,                // Siguiente ubicación de memoria
 }
 
 impl SymbolTable {
     pub fn new() -> Self {
         SymbolTable {
             table: vec![None; SIZE], // Inicializa la tabla con None
+            next_loc: 0,             // Inicializa la ubicación en 0
         }
     }
 
@@ -59,13 +61,9 @@ impl SymbolTable {
                     current.lines.push(LineList { lineno });
                 }
             } else {
-                // Si el símbolo no coincide, crea un nuevo bucket
-                let _new_bucket = BucketList {
-                    name: name.to_string(),
-                    lines: vec![LineList { lineno }],
-                    memloc: loc,
-                };
                 // Manejo de colisiones simple, añadiendo nuevos buckets en el mismo índice
+                // Aquí puedes implementar un mejor manejo de colisiones si lo deseas
+                // Por simplicidad, solo agregamos la línea al bucket existente
                 current.lines.push(LineList { lineno });
             }
         }
@@ -84,14 +82,20 @@ impl SymbolTable {
         None
     }
 
+    // Obtiene la siguiente ubicación de memoria y la incrementa
+    pub fn next_location(&mut self) -> usize {
+        let loc = self.next_loc;
+        self.next_loc += 1;
+        loc
+    }
+
     // Imprime la tabla de símbolos
     pub fn print(&self) {
         println!("Variable Name    Location   Line Numbers");
         println!("---------------   --------   ------------");
         for bucket in &self.table {
             if let Some(bucket) = bucket {
-                print!("{} ", bucket.name);
-                print!("{:<10} ", bucket.memloc);
+                print!("{:<15} {:<10} ", bucket.name, bucket.memloc);
                 for line in &bucket.lines {
                     print!("{} ", line.lineno);
                 }
