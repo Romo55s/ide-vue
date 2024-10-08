@@ -30,6 +30,7 @@ fn reserved_lookup(s: &str) -> TokenType {
         "read" => TokenType::READ,
         "write" => TokenType::WRITE,
         "int" => TokenType::INTEGER,
+        "float" => TokenType::FLOAT,
         "double" => TokenType::DOUBLE,
         "main" => TokenType::MAIN,
         "return" => TokenType::RETURN,
