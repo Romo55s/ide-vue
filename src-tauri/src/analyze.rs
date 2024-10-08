@@ -39,96 +39,34 @@ fn insert_node(t: &TreeNode, symbol_table: &mut SymbolTable) {
             if let Some(ref name) = t.value {
                 let lineno = t.token.unwrap() as usize;
 
-                // Checa el tipo declarado
-                let var_type = match t.node_type {
-                    NodeType::IntStatement => "integer",
-                    NodeType::DoubleStatement => "double",
-                    _ => "",
-                };
 
                 // Inserta en la tabla de símbolos si no está
                 let loc = symbol_table.lookup(name).unwrap_or_else(|| {
                     let new_loc = symbol_table.next_location();
-                    symbol_table.insert(name, lineno, new_loc);
+                    symbol_table.insert(name, t.token, "0", lineno, new_loc);
                     new_loc
                 });
 
                 // Actualiza el símbolo con la línea de uso
-                symbol_table.insert(name, lineno, loc);
+                symbol_table.insert(name, t.token, "0", lineno, loc);
             }
         }
 
-        // para asignaciones y lecturas/escrituras
-        NodeType::Assignment
-        | NodeType::ReadStatement
-        | NodeType::WriteStatement
-        | NodeType::CinStatement
-        | NodeType::CoutStatement
-        | NodeType::Increment
-        | NodeType::Decrement => {
+        // para asignaciones
+        NodeType::Assignment=> {
             if let Some(ref name) = t.value {
                 let lineno = t.token.unwrap() as usize;
 
                 // Inserta en la tabla de símbolos si no está
                 let loc = symbol_table.lookup(name).unwrap_or_else(|| {
                     let new_loc = symbol_table.next_location();
-                    symbol_table.insert(name, lineno, new_loc);
+                    symbol_table.insert(name, t.token, t.value, lineno, new_loc);
                     new_loc
                 });
 
-                //  Actualiza el símbolo con la línea de uso
-                symbol_table.insert(name, lineno, loc);
+                //en el caso de las asignaciones si no encuentra la variable a la cual le estamos asignando valor, entonces marcamos error y no asignamos
+
             }
-        }
-
-        // Maneja expresiones que son identificadores
-        NodeType::Expression | NodeType::Term | NodeType::Factor => {
-            if let Some(TokenType::ID) = t.token {
-                if let Some(ref name) = t.value {
-                    let lineno = t.token.unwrap() as usize;
-
-                    // Inserta en la tabla de símbolos si no está
-                    let loc = symbol_table.lookup(name).unwrap_or_else(|| {
-                        let new_loc = symbol_table.next_location();
-                        symbol_table.insert(name, lineno, new_loc);
-                        new_loc
-                    });
-
-                    // Actualiza el símbolo con la línea de uso
-                    symbol_table.insert(name, lineno, loc);
-                }
-            }
-        }
-
-        // Conditional statements (no symbol table insertion, but semantic checks)
-        NodeType::IfStatement
-        | NodeType::ElseStatement
-        | NodeType::WhileStatement
-        | NodeType::DoWhileStatement
-        | NodeType::RepeatUntilStatement
-        | NodeType::SwitchStatement
-        | NodeType::CaseStatement
-        | NodeType::DefaultStatement
-        | NodeType::MainFunction => {
-            // These types generally don't need direct symbol table updates but may require semantic checks
-        }
-
-        // For main root (probably the program's entry point)
-        NodeType::MainRoot => {
-            // No symbol table insertion needed here
-        }
-
-        // Default case - print un error y manejar según sea necesario
-        NodeType::Error => {
-            log_error("Se encontro un nodo de error en la fase semantica".to_string());
-        }
-
-        // Default case - print un error y manejar según sea necesario
-        _ => {
-            log_error(format!(
-                "NodeType irreconocido: {:?} encontrado durante la insercion a la tabla.",
-                t.node_type
-            ));
         }
     }
 }

@@ -12,7 +12,8 @@ pub struct LineList {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BucketList {
     pub name: String,
-    pub tipo: String,
+    pub _type: String,
+    pub value: String,
     pub lines: Vec<LineList>, // Lista de líneas donde se usa el símbolo
     pub memloc: usize,        // Ubicación en memoria
 }
@@ -41,7 +42,7 @@ impl SymbolTable {
     }
 
     // Inserta un símbolo en la tabla
-    pub fn insert(&mut self, name: &str, tipo: &str, lineno: usize, loc: usize) {
+    pub fn insert(&mut self, name: &str, _type: &str, value: &str, lineno: usize, loc: usize) {
         let h = self.hash(name);
         let bucket = &mut self.table[h];
 
@@ -49,7 +50,8 @@ impl SymbolTable {
         if bucket.is_none() {
             let new_bucket = BucketList {
                 name: name.to_string(),
-                tipo: tipo.to_string(),
+                _type: _type.to_string(),
+                value: value.to_string(),
                 lines: vec![LineList { lineno }], // Inicializa con la línea
                 memloc: loc,
             };
@@ -93,13 +95,13 @@ impl SymbolTable {
 
     // Imprime la tabla de símbolos
     pub fn print(&self) {
-        println!("Variable Name     Tipo        Location   Line Numbers");
-        println!("---------------   ----------   --------   ------------");
+        println!("Variable Name     Type    Value   Location    Line Numbers");
+        println!("--------------    ------  ------  --------    -----------");
         for bucket in &self.table {
             if let Some(bucket) = bucket {
                 print!(
-                    "{:<15} {:<15} {:<10} ",
-                    bucket.name, bucket.tipo, bucket.memloc
+                    "{:<15} {:<15} {:<15} {:<10} ",
+                    bucket.name, bucket._type, bucket.value, bucket.memloc
                 );
                 for line in &bucket.lines {
                     print!("{} ", line.lineno);
