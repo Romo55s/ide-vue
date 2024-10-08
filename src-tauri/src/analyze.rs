@@ -34,43 +34,102 @@ fn traverse(
 // Función para insertar nodos en la tabla de símbolos
 fn insert_node(t: &TreeNode, symbol_table: &mut SymbolTable) {
     match t.node_type {
-        // Para nodos de asignación, lectura y escritura
-        NodeType::Assignment | NodeType::ReadStatement | NodeType::WriteStatement => {
+        // Maneja declaraciones de variables (integer y double)
+        NodeType::IntStatement | NodeType::DoubleStatement => {
             if let Some(ref name) = t.value {
                 let lineno = t.token.unwrap() as usize;
 
-                // Busca en la tabla de símbolos. Si no está, lo inserta.
+                // Checa el tipo declarado
+                let var_type = match t.node_type {
+                    NodeType::IntStatement => "integer",
+                    NodeType::DoubleStatement => "double",
+                    _ => "",
+                };
+
+                // Inserta en la tabla de símbolos si no está
                 let loc = symbol_table.lookup(name).unwrap_or_else(|| {
                     let new_loc = symbol_table.next_location();
                     symbol_table.insert(name, lineno, new_loc);
                     new_loc
                 });
 
-                // Inserta o actualiza el símbolo con la línea de uso
+                // Actualiza el símbolo con la línea de uso
                 symbol_table.insert(name, lineno, loc);
             }
         }
 
-        // Para expresiones que son identificadores
-        NodeType::Expression => {
+        // para asignaciones y lecturas/escrituras
+        NodeType::Assignment
+        | NodeType::ReadStatement
+        | NodeType::WriteStatement
+        | NodeType::CinStatement
+        | NodeType::CoutStatement
+        | NodeType::Increment
+        | NodeType::Decrement => {
+            if let Some(ref name) = t.value {
+                let lineno = t.token.unwrap() as usize;
+
+                // Inserta en la tabla de símbolos si no está
+                let loc = symbol_table.lookup(name).unwrap_or_else(|| {
+                    let new_loc = symbol_table.next_location();
+                    symbol_table.insert(name, lineno, new_loc);
+                    new_loc
+                });
+
+                //  Actualiza el símbolo con la línea de uso
+                symbol_table.insert(name, lineno, loc);
+            }
+        }
+
+        // Maneja expresiones que son identificadores
+        NodeType::Expression | NodeType::Term | NodeType::Factor => {
             if let Some(TokenType::ID) = t.token {
                 if let Some(ref name) = t.value {
                     let lineno = t.token.unwrap() as usize;
 
-                    // Busca en la tabla de símbolos. Si no está, lo inserta.
+                    // Inserta en la tabla de símbolos si no está
                     let loc = symbol_table.lookup(name).unwrap_or_else(|| {
                         let new_loc = symbol_table.next_location();
                         symbol_table.insert(name, lineno, new_loc);
                         new_loc
                     });
 
-                    // Inserta o actualiza el símbolo con la línea de uso
+                    // Actualiza el símbolo con la línea de uso
                     symbol_table.insert(name, lineno, loc);
                 }
             }
         }
-        // Otros tipos de nodos no requieren inserción en la tabla de símbolos
-        _ => {}
+
+        // Conditional statements (no symbol table insertion, but semantic checks)
+        NodeType::IfStatement
+        | NodeType::ElseStatement
+        | NodeType::WhileStatement
+        | NodeType::DoWhileStatement
+        | NodeType::RepeatUntilStatement
+        | NodeType::SwitchStatement
+        | NodeType::CaseStatement
+        | NodeType::DefaultStatement
+        | NodeType::MainFunction => {
+            // These types generally don't need direct symbol table updates but may require semantic checks
+        }
+
+        // For main root (probably the program's entry point)
+        NodeType::MainRoot => {
+            // No symbol table insertion needed here
+        }
+
+        // Default case - print un error y manejar según sea necesario
+        NodeType::Error => {
+            log_error("Se encontro un nodo de error en la fase semantica".to_string());
+        }
+
+        // Default case - print un error y manejar según sea necesario
+        _ => {
+            log_error(format!(
+                "NodeType irreconocido: {:?} encontrado durante la insercion a la tabla.",
+                t.node_type
+            ));
+        }
     }
 }
 
