@@ -1,140 +1,105 @@
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::fmt;
-use std::ptr;
-use std::rc::Rc;
+use serde::{Deserialize, Serialize};
 
 const SIZE: usize = 211;
-const SHIFT: u32 = 4;
+const SHIFT: usize = 4;
 
-/* La función hash */
-fn hash(key: &str) -> usize {
-    let mut temp = 0;
-    for c in key.chars() {
-        temp = ((temp << SHIFT) + c as usize) % SIZE;
-    }
-    temp
+// Estructura para almacenar números de línea
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LineList {
+    pub lineno: usize,
 }
 
-/* La lista de números de línea del código fuente
- * en la que se referencia una variable
- */
-#[derive(Clone)]
-struct LineList {
-    lineno: i32,
-    next: Option<Rc<RefCell<LineList>>>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BucketList {
+    pub name: String,
+    pub lines: Vec<LineList>, // Lista de líneas donde se usa el símbolo
+    pub memloc: usize,        // Ubicación en memoria
 }
 
-impl LineList {
-    fn new(lineno: i32) -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(LineList { lineno, next: None }))
-    }
-}
-
-/* El registro en la lista de buckets para
- * cada variable, incluyendo nombre,
- * la ubicación de memoria asignada, y
- * la lista de números de línea en la que
- * aparece en el código fuente
- */
-#[derive(Clone)]
-struct BucketList {
-    name: String,
-    lines: Rc<RefCell<LineList>>,
-    memloc: i32,
-    next: Option<Rc<RefCell<BucketList>>>,
-}
-
-impl BucketList {
-    fn new(name: String, lineno: i32, memloc: i32) -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(BucketList {
-            name,
-            lines: LineList::new(lineno),
-            memloc,
-            next: None,
-        }))
-    }
-}
-
-/* La tabla hash */
-struct SymbolTable {
-    table: Vec<Option<Rc<RefCell<BucketList>>>>,
+// Implementación de la tabla de símbolos
+pub struct SymbolTable {
+    table: Vec<Option<BucketList>>, // Cambiado a Vec para una mejor gestión
+    next_loc: usize,                // Siguiente ubicación de memoria
 }
 
 impl SymbolTable {
-    pub fn st_insert(&mut self, name: &str, lineno: i32, loc: i32) {
-        let h = hash(name);
-        let mut l = self.table[h].clone(); // Cloning the Option<Rc<RefCell<BucketList>>>
-
-        // Search the bucket list for the name
-        while let Some(ref bucket) = l {
-            if bucket.borrow().name == name {
-                // The name is already in the table, we just add a new line number
-                let mut lines = bucket.borrow().lines.clone(); // Clone the Rc<RefCell<LineList>>
-
-                // Traverse the line list to append the new line number
-                while lines.borrow().next.is_some() {
-                    let next = lines.borrow().next.clone().unwrap();
-                    lines = next;
-                }
-                lines.borrow_mut().next = Some(LineList::new(lineno));
-                return;
-            }
-            l = bucket.borrow().next.clone();
+    pub fn new() -> Self {
+        SymbolTable {
+            table: vec![None; SIZE], // Inicializa la tabla con None
+            next_loc: 0,             // Inicializa la ubicación en 0
         }
-
-        // If not found, insert new bucket
-        let new_bucket = BucketList::new(name.to_string(), lineno, loc);
-        new_bucket.borrow_mut().next = self.table[h].clone(); // Insert at the head of the list
-        self.table[h] = Some(new_bucket);
-    }
-    /* Función st_lookup devuelve la ubicación de memoria
-     * de una variable o -1 si no se encuentra
-     */
-    pub fn st_lookup(&self, name: &str) -> i32 {
-        let h = hash(name);
-        let mut l = self.table[h].clone();
-
-        while let Some(ref bucket) = l {
-            if bucket.borrow().name == name {
-                return bucket.borrow().memloc;
-            }
-            l = bucket.borrow().next.clone();
-        }
-
-        -1
     }
 
-    /* Procedimiento printSymTab imprime una lista formateada
-     * del contenido de la tabla de símbolos
-     */
-    pub fn print_symtab(&self) {
-        println!(
-            "{:14}  {:8}  {}",
-            "Variable Name", "Location", "Line Numbers"
-        );
-        println!(
-            "{:14}  {:8}  {}",
-            "-------------", "--------", "------------"
-        );
+    // Función hash
+    fn hash(&self, key: &str) -> usize {
+        let mut temp = 0;
+        for c in key.chars() {
+            temp = ((temp << SHIFT) + c as usize) % SIZE;
+        }
+        temp
+    }
 
-        for i in 0..SIZE {
-            if let Some(ref bucket) = self.table[i] {
-                let mut b = Some(bucket.clone());
-                while let Some(ref current) = b {
-                    let mut lines = current.borrow().lines.clone();
-                    print!(
-                        "{:14}  {:8}  ",
-                        current.borrow().name,
-                        current.borrow().memloc
-                    );
-                    while let Some(ref line) = lines {
-                        print!("{:4} ", line.borrow().lineno);
-                        lines = line.borrow().next.clone();
-                    }
-                    println!();
-                    b = current.borrow().next.clone();
+    // Inserta un símbolo en la tabla
+    pub fn insert(&mut self, name: &str, lineno: usize, loc: usize) {
+        let h = self.hash(name);
+        let bucket = &mut self.table[h];
+
+        // Si el símbolo no está en la tabla
+        if bucket.is_none() {
+            let new_bucket = BucketList {
+                name: name.to_string(),
+                lines: vec![LineList { lineno }], // Inicializa con la línea
+                memloc: loc,
+            };
+            *bucket = Some(new_bucket);
+        } else {
+            let current = bucket.as_mut().unwrap();
+            // Verifica si el símbolo ya existe
+            if current.name == name {
+                // Comprueba si la línea ya está registrada
+                if !current.lines.iter().any(|line| line.lineno == lineno) {
+                    current.lines.push(LineList { lineno });
                 }
+            } else {
+                // Manejo de colisiones simple, añadiendo nuevos buckets en el mismo índice
+                // Aquí puedes implementar un mejor manejo de colisiones si lo deseas
+                // Por simplicidad, solo agregamos la línea al bucket existente
+                current.lines.push(LineList { lineno });
+            }
+        }
+    }
+
+    // Busca la ubicación de memoria de un símbolo
+    pub fn lookup(&self, name: &str) -> Option<usize> {
+        let h = self.hash(name);
+        let current = &self.table[h];
+
+        if let Some(bucket) = current {
+            if bucket.name == name {
+                return Some(bucket.memloc);
+            }
+        }
+        None
+    }
+
+    // Obtiene la siguiente ubicación de memoria y la incrementa
+    pub fn next_location(&mut self) -> usize {
+        let loc = self.next_loc;
+        self.next_loc += 1;
+        loc
+    }
+
+    // Imprime la tabla de símbolos
+    pub fn print(&self) {
+        println!("Variable Name    Location   Line Numbers");
+        println!("---------------   --------   ------------");
+        for bucket in &self.table {
+            if let Some(bucket) = bucket {
+                print!("{:<15} {:<10} ", bucket.name, bucket.memloc);
+                for line in &bucket.lines {
+                    print!("{} ", line.lineno);
+                }
+                println!();
             }
         }
     }
