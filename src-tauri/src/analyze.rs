@@ -1,11 +1,14 @@
 use crate::globals::{NodeType, TokenType, TreeNode};
-use crate::symTab::{insert, lookup, print};
+use crate::symTab::{insert, lookup, print, SymbolTable};
 
 // Estructura para manejar el tipo de error en los nodos
 pub fn type_error(t: &TreeNode, message: &str) {
-    println!("Type error en la línea {}: {}", t.value.clone().unwrap_or_default(), message);
+    println!(
+        "Type error en la línea {}: {}",
+        t.value.clone().unwrap_or_default(),
+        message
+    );
 }
-
 
 // Función para recorrer el árbol de sintaxis abstracta en preorden y postorden
 fn traverse(
@@ -28,47 +31,37 @@ fn traverse(
     }
 }
 
-// Función para insertar nodos en la tabla de símbolos
+// Función para insertar nodos en la tabla de símbolos y verificar declaración
 fn insert_node(t: &TreeNode, symbol_table: &mut SymbolTable) {
     match t.node_type {
-        // Para nodos de asignación, lectura y escritura
-        NodeType::Assignment 
-        | NodeType::ReadStatement 
-        | NodeType::WriteStatement => {
+        // Manejo de declaraciones de variables (integer y double)
+        NodeType::IntStatement | NodeType::DoubleStatement | NodeType::FloatStatement => {
             if let Some(ref name) = t.value {
                 let lineno = t.token.unwrap() as usize;
-                
-                // Busca en la tabla de símbolos. Si no está, lo inserta.
-                let loc = symbol_table.lookup(name).unwrap_or_else(|| {
-                    let new_loc = symbol_table.next_location();
-                    symbol_table.insert(name, lineno, new_loc);
-                    new_loc
-                });
-                
-                // Inserta o actualiza el símbolo con la línea de uso
-                symbol_table.insert(name, lineno, loc);
-            }
-        }
 
-        // Para expresiones que son identificadores
-        NodeType::Expression => {
-            if let Some(TokenType::ID) = t.token {
-                if let Some(ref name) = t.value {
-                    let lineno = t.token.unwrap() as usize;
-                    
-                    // Busca en la tabla de símbolos. Si no está, lo inserta.
-                    let loc = symbol_table.lookup(name).unwrap_or_else(|| {
-                        let new_loc = symbol_table.next_location();
-                        symbol_table.insert(name, lineno, new_loc);
-                        new_loc
-                    });
-                    
-                    // Inserta o actualiza el símbolo con la línea de uso
-                    symbol_table.insert(name, lineno, loc);
+                // Inserta en la tabla de símbolos si no está
+                if symbol_table.lookup(name).is_none() {
+                    let new_loc = symbol_table.next_location();
+                    symbol_table.insert(name, t.token, "0", lineno, new_loc);
+                } else {
+                    type_error(t, &format!("La variable '{}' ya está declarada", name)); //opcional
                 }
             }
         }
-        // Otros tipos de nodos no requieren inserción en la tabla de símbolos
+
+        // Manejo de asignaciones
+        NodeType::Assignment => {
+            if let Some(ref name) = t.value {
+                let lineno = t.token.unwrap() as usize;
+
+                // Verificar que la variable esté declarada antes de usarla
+                if let Some(loc) = symbol_table.lookup(name) {
+                    symbol_table.insert(name, t.token, t.value, lineno, loc);
+                } else {
+                    type_error(t, &format!("Variable '{}' usada sin declarar", name));
+                }
+            }
+        }
         _ => {}
     }
 }
@@ -83,78 +76,142 @@ pub fn build_symtab(syntax_tree: &TreeNode, symbol_table: &mut SymbolTable) {
     symbol_table.print();
 }
 
-fn check_node(t: &TreeNode) {
+// Inferencia de tipos en las expresiones
+fn infer_type(t: &TreeNode) -> NodeType {
     match t.node_type {
         NodeType::Expression => {
             if let Some(token) = &t.token {
                 match token {
-                    TokenType::PLUS |
-                    TokenType::MINUS |
-                    TokenType::TIMES |
-                    TokenType::DIVIDE |
-                    TokenType::MODULO |
-                    TokenType::POWER => {
-                        
-                        let left_type = &t.children[0].node_type;
-                        let right_type = &t.children[1].node_type;
+                    TokenType::PLUS | TokenType::MINUS | TokenType::TIMES | TokenType::DIVIDE | TokenType::MODULO | TokenType::POWER => {
+                        let left_type = infer_type(&t.children[0]);
+                        let right_type = infer_type(&t.children[1]);
 
-                        // Verificar que los operandos sean expresiones válidas
-                        if left_type != &NodeType::Expression || right_type != &NodeType::Expression {
-                            type_error(t, "Operador aplicado a no números");
-                        }
-
-                        // Verificación de operadores relacionales
-                        if matches!(
-                            t.token,
-                            Some(TokenType::EQ) |
-                            Some(TokenType::NEQ) |
-                            Some(TokenType::LT) |
-                            Some(TokenType::LTE) |
-                            Some(TokenType::GT) |
-                            Some(TokenType::GTE)
-                        ) {
-                            // Si es un operador relacional, establecemos el tipo de nodo como Error
-                            t.borrow_mut().node_type = NodeType::Error;
+                        // Inferencia de tipo basado en operandos
+                        if left_type == right_type {
+                            left_type // Ambos operandos son del mismo tipo
+                        } else {
+                            NodeType::Error // Tipos incompatibles
                         }
                     }
-                    _ => {}
+                    _ => NodeType::Error, // Otros tipos de expresiones no soportadas
                 }
+            } else {
+                NodeType::Error
             }
         }
-        NodeType::IfStatement => {
-            // Verificación de que la condición del if sea una expresión válida
-            if t.children[0].node_type != NodeType::Expression {
-                type_error(&t.children[0], "La condición del 'if' no es booleana");
+        _ => t.node_type.clone(),
+    }
+}
+
+fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
+    if t.node_type == NodeType::Expression {
+        if let Some(token) = &t.token {
+            match token {
+                TokenType::PLUS => {
+                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    if left.fract() == 0.0 && right.fract() == 0.0 {
+                        // Si ambos son enteros, retornar como entero
+                        Some((left as i32 + right as i32) as f64)
+                    } else {
+                        // Si uno es flotante, retornar como flotante
+                        Some(left + right)
+                    }
+                }
+                TokenType::MINUS => {
+                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    if left.fract() == 0.0 && right.fract() == 0.0 {
+                        Some((left as i32 - right as i32) as f64)
+                    } else {
+                        Some(left - right)
+                    }
+                }
+                TokenType::TIMES => {
+                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    if left.fract() == 0.0 && right.fract() == 0.0 {
+                        Some((left as i32 * right as i32) as f64)
+                    } else {
+                        Some(left * right)
+                    }
+                }
+                TokenType::DIVIDE => {
+                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    if right != 0.0 {
+                        Some(left / right)
+                    } else {
+                        type_error(t, "División por cero");
+                        None
+                    }
+                }
+                TokenType::MODULO => {
+                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    if left.fract() == 0.0 && right.fract() == 0.0 {
+                        Some((left as i32 % right as i32) as f64)
+                    } else {
+                        Some(left % right)
+                    }
+                }
+                TokenType::POWER => {
+                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    Some(left.powf(right))
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
+    } else if t.node_type == NodeType::IntStatement {
+        // Si es un número entero, retornarlo como i32
+        t.value.as_ref().and_then(|v| v.parse::<i32>().ok()).map(|val| val as f64)
+    } else if t.node_type == NodeType::DoubleStatement {
+        // Si es un número flotante, retornarlo como f64
+        t.value.as_ref().and_then(|v| v.parse::<f64>().ok())
+    } else if let Some(ref name) = t.value {
+        // Si es una variable, buscar el valor en la tabla de símbolos
+        if let Some(entry) = symbol_table.lookup(name) {
+            // Intentar como flotante primero, si falla intentar como entero
+            entry.value.parse::<f64>().or_else(|_| entry.value.parse::<i32>().map(|val| val as f64)).ok()
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+
+// Procedimiento para realizar la verificación de tipos y evaluación de expresiones
+fn check_node(t: &TreeNode, symbol_table: &SymbolTable) {
+    match t.node_type {
+        NodeType::Expression => {
+            let inferred_type = infer_type(t);
+            if inferred_type == NodeType::Error {
+                type_error(t, "Tipos incompatibles en la expresión");
+            }
+
+            // Intentar evaluar la expresión si es constante
+            if let Some(result) = eval_constant_expr(t, symbol_table) {
+                println!("Resultado de la expresión constante: {}", result); //se tiene que retornar
             }
         }
         NodeType::Assignment => {
-            // Verificación de que la asignación sea de un valor válido
-            if t.children[0].node_type != NodeType::Expression {
-                type_error(&t.children[0], "Asignación de valor no válido");
-            }
-        }
-        NodeType::WriteStatement => {
-            // Verificación de que el valor a escribir sea válido
-            if t.children[0].node_type != NodeType::Expression {
-                type_error(&t.children[0], "Escritura de valor no válido");
-            }
-        }
-        NodeType::DoWhileStatement => {
-            // Verificación de que la condición del do-while sea booleana
-            if t.children[1].node_type != NodeType::Expression {
-                type_error(&t.children[1], "La condición del 'do-while' no es booleana");
-            }
-        }
-        NodeType::RepeatUntilStatement => {
-            // Verificación de que la condición del repeat-until sea booleana
-            if t.children[1].node_type != NodeType::Expression {
-                type_error(&t.children[1], "La condición del 'repeat-until' no es booleana");
+            if let Some(ref name) = t.value {
+                // Verificación de que la variable esté declarada
+                if symbol_table.lookup(name).is_none() {
+                    type_error(t, &format!("Variable '{}' no está declarada", name));
+                }
             }
         }
         _ => {}
     }
 }
-// Procedimiento para realizar la verificación de tipos
-pub fn type_check(syntax_tree: Option<&TreeNode>) {
-    traverse(syntax_tree, None, Some(&check_node));
+
+// Procedimiento para realizar la verificación de tipos y evaluación de expresiones
+pub fn type_check(syntax_tree: Option<&TreeNode>, symbol_table: &SymbolTable) {
+    traverse(syntax_tree, None, Some(&|node| check_node(node, symbol_table)));
 }
