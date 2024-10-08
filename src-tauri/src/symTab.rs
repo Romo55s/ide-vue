@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 const SIZE: usize = 211;
 const SHIFT: usize = 4;
@@ -12,20 +12,22 @@ pub struct LineList {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BucketList {
     pub name: String,
+    pub _type: String,
+    pub value: String,
     pub lines: Vec<LineList>, // Lista de líneas donde se usa el símbolo
     pub memloc: usize,        // Ubicación en memoria
 }
 
 // Implementación de la tabla de símbolos
 pub struct SymbolTable {
-    table: Vec<Option<BucketList>>, // Cambiado a Vec para una mejor gestión
-    next_loc: usize,                // Siguiente ubicación de memoria
+    table: Vec<Option<Vec<BucketList>>>, // Cada posición es una lista de buckets (para encadenamiento)
+    next_loc: usize,                     // Siguiente ubicación de memoria
 }
 
 impl SymbolTable {
     pub fn new() -> Self {
         SymbolTable {
-            table: vec![None; SIZE], // Inicializa la tabla con None
+            table: vec![None; SIZE], // Inicializa la tabla con None en cada posición
             next_loc: 0,             // Inicializa la ubicación en 0
         }
     }
@@ -39,47 +41,58 @@ impl SymbolTable {
         temp
     }
 
-    // Inserta un símbolo en la tabla
-    pub fn insert(&mut self, name: &str, lineno: usize, loc: usize) {
+    // Inserta un símbolo en la tabla con manejo de colisiones por encadenamiento
+    pub fn insert(&mut self, name: &str, _type: &str, value: &str, lineno: usize, loc: usize) {
         let h = self.hash(name);
-        let bucket = &mut self.table[h];
+        let bucket_list = &mut self.table[h];
 
-        // Si el símbolo no está en la tabla
-        if bucket.is_none() {
+        // Si no hay ningún bucket en esta posición, crea una nueva lista
+        if bucket_list.is_none() {
             let new_bucket = BucketList {
                 name: name.to_string(),
+                _type: _type.to_string(),
+                value: value.to_string(),
                 lines: vec![LineList { lineno }], // Inicializa con la línea
                 memloc: loc,
             };
-            *bucket = Some(new_bucket);
+            *bucket_list = Some(vec![new_bucket]); // Crea una lista de buckets
         } else {
-            let current = bucket.as_mut().unwrap();
-            // Verifica si el símbolo ya existe
-            if current.name == name {
-                // Comprueba si la línea ya está registrada
-                if !current.lines.iter().any(|line| line.lineno == lineno) {
-                    current.lines.push(LineList { lineno });
+            let bucket_vec = bucket_list.as_mut().unwrap();
+
+            // Busca si el símbolo ya está en la lista de buckets
+            if let Some(bucket) = bucket_vec.iter_mut().find(|b| b.name == name) {
+                // Si ya existe, actualiza la lista de líneas
+                if !bucket.lines.iter().any(|line| line.lineno == lineno) {
+                    bucket.lines.push(LineList { lineno });
                 }
             } else {
-                // Manejo de colisiones simple, añadiendo nuevos buckets en el mismo índice
-                // Aquí puedes implementar un mejor manejo de colisiones si lo deseas
-                // Por simplicidad, solo agregamos la línea al bucket existente
-                current.lines.push(LineList { lineno });
+                // Si no existe, añade un nuevo bucket a la lista
+                let new_bucket = BucketList {
+                    name: name.to_string(),
+                    _type: _type.to_string(),
+                    value: value.to_string(),
+                    lines: vec![LineList { lineno }],
+                    memloc: loc,
+                };
+                bucket_vec.push(new_bucket); // Añade el nuevo bucket a la lista
             }
         }
     }
 
     // Busca la ubicación de memoria de un símbolo
-    pub fn lookup(&self, name: &str) -> Option<usize> {
+    pub fn lookup(&self, name: &str) -> Option<&BucketList> {
         let h = self.hash(name);
-        let current = &self.table[h];
+        let bucket_list = &self.table[h];
 
-        if let Some(bucket) = current {
-            if bucket.name == name {
-                return Some(bucket.memloc);
+        // Si hay una lista de buckets en esa posición, buscar en ella
+        if let Some(bucket_vec) = bucket_list {
+            for bucket in bucket_vec {
+                if bucket.name == name {
+                    return Some(bucket); // Retorna el bucket encontrado
+                }
             }
         }
-        None
+        None // Si no se encuentra, retorna None
     }
 
     // Obtiene la siguiente ubicación de memoria y la incrementa
@@ -91,15 +104,20 @@ impl SymbolTable {
 
     // Imprime la tabla de símbolos
     pub fn print(&self) {
-        println!("Variable Name    Location   Line Numbers");
-        println!("---------------   --------   ------------");
-        for bucket in &self.table {
-            if let Some(bucket) = bucket {
-                print!("{:<15} {:<10} ", bucket.name, bucket.memloc);
-                for line in &bucket.lines {
-                    print!("{} ", line.lineno);
+        println!("Variable Name     Type            Value           Location    Line Numbers");
+        println!("--------------    --------------  --------------  --------    -----------");
+        for bucket_list in &self.table {
+            if let Some(bucket_vec) = bucket_list {
+                for bucket in bucket_vec {
+                    print!(
+                        "{:<15} {:<15} {:<15} {:<10} ",
+                        bucket.name, bucket._type, bucket.value, bucket.memloc
+                    );
+                    for line in &bucket.lines {
+                        print!("{} ", line.lineno);
+                    }
+                    println!();
                 }
-                println!();
             }
         }
     }
