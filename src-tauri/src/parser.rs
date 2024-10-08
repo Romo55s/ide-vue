@@ -69,6 +69,7 @@ fn parse_statement(
         Some((TokenType::CIN, _, _, _)) => return parse_cin_statement(tokens, current_token),
         Some((TokenType::COUT, _, _, _)) => return parse_cout_statement(tokens, current_token),
         Some((TokenType::MAIN, _, _, _)) => return parse_main_function(tokens, current_token),
+        Some((TokenType::FLOAT, _, _, _)) => return parse_float_variable_declaration(tokens, current_token),
         Some((TokenType::INTEGER, _, _, _)) => {
             return parse_int_variable_declaration(tokens, current_token)
         }
@@ -109,6 +110,53 @@ fn is_part_of_expression(
         return true;
     }
     false
+}
+
+fn parse_float_variable_declaration(
+    tokens: &[(TokenType, String, usize, usize)],
+    current_token: &mut usize,
+) -> Result<TreeNode, String> {
+    let mut node = TreeNode::new(NodeType::FloatStatement);
+
+    // Parsear la palabra clave 'float'
+    match_token(tokens, TokenType::FLOAT, current_token)?;
+
+    // Parsear los identificadores
+    loop {
+        match tokens.get(*current_token) {
+            Some((TokenType::ID, id, _, _)) => {
+                node.children.push(TreeNode {
+                    node_type: NodeType::Factor,
+                    token: Some(TokenType::ID),
+                    value: Some(id.clone()),
+                    children: Vec::new(),
+                });
+                *current_token += 1;
+                if let Some((TokenType::COMMA, _, _, _)) = tokens.get(*current_token) {
+                    *current_token += 1; // Avanzar si hay una coma
+                } else {
+                    break; // Salir del bucle si no hay más identificadores
+                }
+            }
+            _ => {
+                return Err(format!(
+                    "Error de sintaxis: se esperaba un identificador en la posición {:?}",
+                    tokens.get(*current_token)
+                ))
+            }
+        }
+    }
+
+    // Verificar si hay un punto y coma al final
+    if let Some((TokenType::SEMICOLON, _, _, _)) = tokens.get(*current_token) {
+        *current_token += 1; // Avanzar si hay un punto y coma
+        Ok(node)
+    } else {
+        Err(format!(
+            "Error de sintaxis: se esperaba ';' en la posición {:?}",
+            *current_token
+        ))
+    }
 }
 
 fn parse_int_variable_declaration(
