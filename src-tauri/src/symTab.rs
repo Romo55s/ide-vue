@@ -19,6 +19,7 @@ pub struct BucketList {
 }
 
 // Implementación de la tabla de símbolos
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SymbolTable {
     table: Vec<Option<Vec<BucketList>>>, // Cada posición es una lista de buckets (para encadenamiento)
     next_loc: usize,                     // Siguiente ubicación de memoria

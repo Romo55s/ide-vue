@@ -36,13 +36,13 @@ fn lexic(
 
 #[tauri::command]
 fn semantic(
-    syntax_tree: TreeNode,  // Recibe el árbol de sintaxis parseado
+    mut syntax_tree: TreeNode,  // Recibe el árbol de sintaxis parseado
 ) -> Result<(TreeNode, Vec<String>), String> {
 
     let sym_Table = SymbolTable::new(); 
 
     // Llama a analyze_syntax_tree para realizar la etapa semántica
-    let (annotated_tree, semantic_errors) = analyze_syntax_tree(&syntax_tree, &sym_Table);
+    let (annotated_tree, semantic_errors) = analyze_syntax_tree(&mut syntax_tree, sym_Table);
 
     // Retorna el árbol de sintaxis anotado y los errores semánticos
     Ok((annotated_tree,semantic_errors))
