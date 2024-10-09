@@ -1,7 +1,7 @@
 static mut TYPE_ERRORS: Vec<String> = Vec::new(); //arreglo global para almacenar los errores
 
 use crate::globals::{NodeType, TokenType, TreeNode};
-use crate::symTab::{insert, lookup, print, SymbolTable};
+use crate::symTab::SymbolTable;
 
 
 // Estructura para manejar el tipo de error en los nodos
@@ -48,7 +48,12 @@ fn insert_node(t: &TreeNode, symbol_table: &mut SymbolTable) {
                 // Inserta en la tabla de símbolos si no está
                 if symbol_table.lookup(name).is_none() {
                     let new_loc = symbol_table.next_location();
-                    symbol_table.insert(name, t.token, "0", lineno, new_loc);
+                    let token_type = match t.token {
+                        Some(ref token) => format!("{:?}", token), // Convertir a String o hacer otro procesamiento
+                        None => "None".to_string(),
+                    };
+                    
+                    symbol_table.insert(name, &token_type , "0", lineno, new_loc);
                 } else {
                     type_error(t, &format!("La variable '{}' ya está declarada", name)); //opcional
                 }
@@ -62,7 +67,16 @@ fn insert_node(t: &TreeNode, symbol_table: &mut SymbolTable) {
 
                 // Verificar que la variable esté declarada antes de usarla
                 if let Some(loc) = symbol_table.lookup(name) {
-                    symbol_table.insert(name, t.token, t.value, lineno, loc);
+                    let token_type = match t.token {
+                        Some(ref token) => format!("{:?}", token), // Convertir a String o hacer otro procesamiento
+                        None => "None".to_string(),
+                    };
+                    let token_value = match t.value {
+                        Some(ref value) => format!("{:?}", value), // Convertir a String o hacer otro procesamiento
+                        None => "None".to_string(),
+                    };
+
+                    symbol_table.insert(name, &token_type , &token_value, lineno, loc.memloc);
                 } else {
                     type_error(t, &format!("Variable '{}' usada sin declarar", name));
                 }
@@ -197,7 +211,7 @@ fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
 
 
 // Procedimiento para realizar la verificación de tipos y evaluación de expresiones
-fn check_node(t: &TreeNode, symbol_table: &SymbolTable) {
+fn check_node(t: &mut TreeNode, symbol_table: &SymbolTable) {
     match t.node_type {
         NodeType::Expression => {
             let inferred_type = infer_type(t);
