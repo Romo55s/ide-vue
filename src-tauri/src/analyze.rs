@@ -1,13 +1,19 @@
+static mut TYPE_ERRORS: Vec<String> = Vec::new(); //arreglo global para almacenar los errores
+
 use crate::globals::{NodeType, TokenType, TreeNode};
 use crate::symTab::{insert, lookup, print, SymbolTable};
 
+
 // Estructura para manejar el tipo de error en los nodos
 pub fn type_error(t: &TreeNode, message: &str) {
-    println!(
+    let error_message = format!(
         "Type error en la línea {}: {}",
         t.value.clone().unwrap_or_default(),
         message
     );
+    unsafe {
+        TYPE_ERRORS.push(error_message);
+    }
 }
 
 // Función para recorrer el árbol de sintaxis abstracta en preorden y postorden
@@ -81,27 +87,32 @@ fn infer_type(t: &TreeNode) -> NodeType {
     match t.node_type {
         NodeType::Expression => {
             if let Some(token) = &t.token {
-                match token {
-                    TokenType::PLUS | TokenType::MINUS | TokenType::TIMES | TokenType::DIVIDE | TokenType::MODULO | TokenType::POWER => {
-                        let left_type = infer_type(&t.children[0]);
-                        let right_type = infer_type(&t.children[1]);
+                // Inferir tipos de los operandos
+                let left_type = infer_type(&t.children[0]);
+                let right_type = infer_type(&t.children[1]);
 
-                        // Inferencia de tipo basado en operandos
-                        if left_type == right_type {
-                            left_type // Ambos operandos son del mismo tipo
-                        } else {
-                            NodeType::Error // Tipos incompatibles
-                        }
-                    }
-                    _ => NodeType::Error, // Otros tipos de expresiones no soportadas
+                // Inferencia de tipo basado en operandos
+                match (left_type, right_type) {
+                    (NodeType::IntStatement, NodeType::IntStatement) => NodeType::IntStatement,
+                    (NodeType::DoubleStatement, NodeType::DoubleStatement) => NodeType::DoubleStatement,
+                    (NodeType::IntStatement, NodeType::DoubleStatement) => NodeType::DoubleStatement,
+                    (NodeType::DoubleStatement, NodeType::IntStatement) => NodeType::DoubleStatement,
+                    (NodeType::FloatStatement, NodeType::FloatStatement) => NodeType::FloatStatement,
+                    (NodeType::FloatStatement, NodeType::DoubleStatement) => NodeType::FloatStatement,
+                    (NodeType::DoubleStatement, NodeType::FloatStatement) => NodeType::FloatStatement,
+                    (NodeType::FloatStatement, NodeType::IntStatement) => NodeType::FloatStatement,
+                    (NodeType::IntStatement, NodeType::FloatStatement) => NodeType::FloatStatement,
+                    _ => NodeType::Error, // Tipos incompatibles
                 }
             } else {
                 NodeType::Error
             }
         }
-        _ => t.node_type.clone(),
+        NodeType::IntStatement | NodeType::DoubleStatement | NodeType:: FloatStatement => t.node_type.clone(),
+        _ => NodeType::Error, // Otros tipos no soportados
     }
 }
+
 
 fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
     if t.node_type == NodeType::Expression {
@@ -196,7 +207,7 @@ fn check_node(t: &TreeNode, symbol_table: &SymbolTable) {
 
             // Intentar evaluar la expresión si es constante
             if let Some(result) = eval_constant_expr(t, symbol_table) {
-                println!("Resultado de la expresión constante: {}", result); //se tiene que retornar
+                t.value = Some(result.to_string());
             }
         }
         NodeType::Assignment => {
@@ -214,4 +225,17 @@ fn check_node(t: &TreeNode, symbol_table: &SymbolTable) {
 // Procedimiento para realizar la verificación de tipos y evaluación de expresiones
 pub fn type_check(syntax_tree: Option<&TreeNode>, symbol_table: &SymbolTable) {
     traverse(syntax_tree, None, Some(&|node| check_node(node, symbol_table)));
+}
+
+pub fn analyze_syntax_tree(syntax_tree: &mut TreeNode, symbol_table: &mut SymbolTable) -> (TreeNode, Vec<String>) {
+    // Paso 1: Construcción de la tabla de símbolos
+    build_symtab(syntax_tree, symbol_table);
+
+    // Paso 2: Verificación de tipos y anotaciones
+    type_check(Some(syntax_tree), symbol_table);
+
+    // Retornar el árbol anotado y los errores encontrados
+    unsafe {
+        (syntax_tree.clone(), TYPE_ERRORS.clone())
+    }
 }
