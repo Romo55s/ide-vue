@@ -1,13 +1,19 @@
+static mut TYPE_ERRORS: Vec<String> = Vec::new(); //arreglo global para almacenar los errores
+
 use crate::globals::{NodeType, TokenType, TreeNode};
-use crate::symTab::{insert, lookup, print, SymbolTable};
+use crate::symTab::SymbolTable;
+
 
 // Estructura para manejar el tipo de error en los nodos
 pub fn type_error(t: &TreeNode, message: &str) {
-    println!(
+    let error_message = format!(
         "Type error en la línea {}: {}",
         t.value.clone().unwrap_or_default(),
         message
     );
+    unsafe {
+        TYPE_ERRORS.push(error_message);
+    }
 }
 
 // Función para recorrer el árbol de sintaxis abstracta en preorden y postorden
@@ -31,18 +37,45 @@ fn traverse(
     }
 }
 
+fn traverse_mut(
+    t: Option<&mut TreeNode>,
+    pre_proc: Option<&dyn Fn(&mut TreeNode)>,
+    post_proc: Option<&dyn Fn(&mut TreeNode)>,
+) {
+    if let Some(node) = t {
+        if let Some(pre) = pre_proc {
+            pre(node);
+        }
+
+        for child in &mut node.children {
+            traverse_mut(Some(child), pre_proc, post_proc);
+        }
+
+        if let Some(post) = post_proc {
+            post(node);
+        }
+    }
+}
+
+
+
 // Función para insertar nodos en la tabla de símbolos y verificar declaración
-fn insert_node(t: &TreeNode, symbol_table: &mut SymbolTable) {
+fn insert_node(t: &mut TreeNode, mut symbol_table:SymbolTable) {
     match t.node_type {
         // Manejo de declaraciones de variables (integer y double)
         NodeType::IntStatement | NodeType::DoubleStatement | NodeType::FloatStatement => {
             if let Some(ref name) = t.value {
-                let lineno = t.token.unwrap() as usize;
+                let lineno = t.token.clone().unwrap() as usize;
 
                 // Inserta en la tabla de símbolos si no está
                 if symbol_table.lookup(name).is_none() {
                     let new_loc = symbol_table.next_location();
-                    symbol_table.insert(name, t.token, "0", lineno, new_loc);
+                    let token_type = match t.token {
+                        Some(ref token) => format!("{:?}", token), // Convertir a String o hacer otro procesamiento
+                        None => "None".to_string(),
+                    };
+                    
+                    symbol_table.insert(name, &token_type , "0", lineno, new_loc);
                 } else {
                     type_error(t, &format!("La variable '{}' ya está declarada", name)); //opcional
                 }
@@ -52,11 +85,20 @@ fn insert_node(t: &TreeNode, symbol_table: &mut SymbolTable) {
         // Manejo de asignaciones
         NodeType::Assignment => {
             if let Some(ref name) = t.value {
-                let lineno = t.token.unwrap() as usize;
+                let lineno = t.token.clone().unwrap() as usize;
 
                 // Verificar que la variable esté declarada antes de usarla
                 if let Some(loc) = symbol_table.lookup(name) {
-                    symbol_table.insert(name, t.token, t.value, lineno, loc);
+                    let token_type = match t.token {
+                        Some(ref token) => format!("{:?}", token), // Convertir a String o hacer otro procesamiento
+                        None => "None".to_string(),
+                    };
+                    let token_value = match t.value {
+                        Some(ref value) => format!("{:?}", value), // Convertir a String o hacer otro procesamiento
+                        None => "None".to_string(),
+                    };
+
+                    symbol_table.insert(name, &token_type , &token_value, lineno, loc.memloc);
                 } else {
                     type_error(t, &format!("Variable '{}' usada sin declarar", name));
                 }
@@ -67,10 +109,10 @@ fn insert_node(t: &TreeNode, symbol_table: &mut SymbolTable) {
 }
 
 // Procedimiento que construye la tabla de símbolos recorriendo el AST en preorden
-pub fn build_symtab(syntax_tree: &TreeNode, symbol_table: &mut SymbolTable) {
-    traverse(
+pub fn build_symtab(syntax_tree: &mut TreeNode, symbol_table: SymbolTable) {
+    traverse_mut(
         Some(syntax_tree),
-        Some(&|node| insert_node(node, symbol_table)),
+        Some(&mut |node| insert_node(node, symbol_table.clone())),
         None,
     );
     symbol_table.print();
@@ -81,35 +123,40 @@ fn infer_type(t: &TreeNode) -> NodeType {
     match t.node_type {
         NodeType::Expression => {
             if let Some(token) = &t.token {
-                match token {
-                    TokenType::PLUS | TokenType::MINUS | TokenType::TIMES | TokenType::DIVIDE | TokenType::MODULO | TokenType::POWER => {
-                        let left_type = infer_type(&t.children[0]);
-                        let right_type = infer_type(&t.children[1]);
+                // Inferir tipos de los operandos
+                let left_type = infer_type(&t.children[0]);
+                let right_type = infer_type(&t.children[1]);
 
-                        // Inferencia de tipo basado en operandos
-                        if left_type == right_type {
-                            left_type // Ambos operandos son del mismo tipo
-                        } else {
-                            NodeType::Error // Tipos incompatibles
-                        }
-                    }
-                    _ => NodeType::Error, // Otros tipos de expresiones no soportadas
+                // Inferencia de tipo basado en operandos
+                match (left_type, right_type) {
+                    (NodeType::IntStatement, NodeType::IntStatement) => NodeType::IntStatement,
+                    (NodeType::DoubleStatement, NodeType::DoubleStatement) => NodeType::DoubleStatement,
+                    (NodeType::IntStatement, NodeType::DoubleStatement) => NodeType::DoubleStatement,
+                    (NodeType::DoubleStatement, NodeType::IntStatement) => NodeType::DoubleStatement,
+                    (NodeType::FloatStatement, NodeType::FloatStatement) => NodeType::FloatStatement,
+                    (NodeType::FloatStatement, NodeType::DoubleStatement) => NodeType::FloatStatement,
+                    (NodeType::DoubleStatement, NodeType::FloatStatement) => NodeType::FloatStatement,
+                    (NodeType::FloatStatement, NodeType::IntStatement) => NodeType::FloatStatement,
+                    (NodeType::IntStatement, NodeType::FloatStatement) => NodeType::FloatStatement,
+                    _ => NodeType::Error, // Tipos incompatibles
                 }
             } else {
                 NodeType::Error
             }
         }
-        _ => t.node_type.clone(),
+        NodeType::IntStatement | NodeType::DoubleStatement | NodeType:: FloatStatement => t.node_type.clone(),
+        _ => NodeType::Error, // Otros tipos no soportados
     }
 }
 
-fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
+
+fn eval_constant_expr(t: &TreeNode, symbol_table: SymbolTable) -> Option<f64> {
     if t.node_type == NodeType::Expression {
         if let Some(token) = &t.token {
             match token {
                 TokenType::PLUS => {
-                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
-                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    let left = eval_constant_expr(&t.children[0], symbol_table.clone())?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table.clone())?;
                     if left.fract() == 0.0 && right.fract() == 0.0 {
                         // Si ambos son enteros, retornar como entero
                         Some((left as i32 + right as i32) as f64)
@@ -119,8 +166,8 @@ fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
                     }
                 }
                 TokenType::MINUS => {
-                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
-                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    let left = eval_constant_expr(&t.children[0], symbol_table.clone())?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table.clone())?;
                     if left.fract() == 0.0 && right.fract() == 0.0 {
                         Some((left as i32 - right as i32) as f64)
                     } else {
@@ -128,8 +175,8 @@ fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
                     }
                 }
                 TokenType::TIMES => {
-                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
-                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    let left = eval_constant_expr(&t.children[0], symbol_table.clone())?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table.clone())?;
                     if left.fract() == 0.0 && right.fract() == 0.0 {
                         Some((left as i32 * right as i32) as f64)
                     } else {
@@ -137,8 +184,8 @@ fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
                     }
                 }
                 TokenType::DIVIDE => {
-                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
-                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    let left = eval_constant_expr(&t.children[0], symbol_table.clone())?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table.clone())?;
                     if right != 0.0 {
                         Some(left / right)
                     } else {
@@ -147,8 +194,8 @@ fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
                     }
                 }
                 TokenType::MODULO => {
-                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
-                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    let left = eval_constant_expr(&t.children[0], symbol_table.clone())?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table.clone())?;
                     if left.fract() == 0.0 && right.fract() == 0.0 {
                         Some((left as i32 % right as i32) as f64)
                     } else {
@@ -156,8 +203,8 @@ fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
                     }
                 }
                 TokenType::POWER => {
-                    let left = eval_constant_expr(&t.children[0], symbol_table)?;
-                    let right = eval_constant_expr(&t.children[1], symbol_table)?;
+                    let left = eval_constant_expr(&t.children[0], symbol_table.clone())?;
+                    let right = eval_constant_expr(&t.children[1], symbol_table.clone())?;
                     Some(left.powf(right))
                 }
                 _ => None,
@@ -186,7 +233,7 @@ fn eval_constant_expr(t: &TreeNode, symbol_table: &SymbolTable) -> Option<f64> {
 
 
 // Procedimiento para realizar la verificación de tipos y evaluación de expresiones
-fn check_node(t: &TreeNode, symbol_table: &SymbolTable) {
+fn check_node(t: &mut TreeNode, symbol_table: SymbolTable) {
     match t.node_type {
         NodeType::Expression => {
             let inferred_type = infer_type(t);
@@ -195,8 +242,8 @@ fn check_node(t: &TreeNode, symbol_table: &SymbolTable) {
             }
 
             // Intentar evaluar la expresión si es constante
-            if let Some(result) = eval_constant_expr(t, symbol_table) {
-                println!("Resultado de la expresión constante: {}", result); //se tiene que retornar
+            if let Some(result) = eval_constant_expr(t, symbol_table.clone()) {
+                t.value = Some(result.to_string());
             }
         }
         NodeType::Assignment => {
@@ -212,6 +259,19 @@ fn check_node(t: &TreeNode, symbol_table: &SymbolTable) {
 }
 
 // Procedimiento para realizar la verificación de tipos y evaluación de expresiones
-pub fn type_check(syntax_tree: Option<&TreeNode>, symbol_table: &SymbolTable) {
-    traverse(syntax_tree, None, Some(&|node| check_node(node, symbol_table)));
+pub fn type_check(syntax_tree: Option<&mut TreeNode>, symbol_table: SymbolTable) {
+    traverse_mut(syntax_tree, None, Some(&mut |node: &mut TreeNode| check_node(node, symbol_table.clone())));
+}
+
+pub fn analyze_syntax_tree(syntax_tree: &mut TreeNode, symbol_table: SymbolTable) -> (TreeNode, Vec<String>) {
+    // Paso 1: Construcción de la tabla de símbolos
+    build_symtab(syntax_tree, symbol_table.clone());
+
+    // Paso 2: Verificación de tipos y anotaciones
+    type_check(Some(syntax_tree), symbol_table.clone());
+
+    // Retornar el árbol anotado y los errores encontrados
+    unsafe {
+        (syntax_tree.clone(), TYPE_ERRORS.clone())
+    }
 }

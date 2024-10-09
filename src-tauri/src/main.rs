@@ -4,6 +4,8 @@
 use app::globals::{log_error, NodeType, TokenType, TreeNode, ERRORS};
 use app::lexer::get_token;
 use app::parser::parse_program;
+use app::analyze::analyze_syntax_tree;
+use app::symTab::SymbolTable;
 use std::fs;
 use std::io::Write;
 fn main() {
@@ -12,7 +14,8 @@ fn main() {
             save_file,
             remove_file,
             lexic,
-            parse
+            parse,
+            semantic
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -29,6 +32,20 @@ fn lexic(
     String,
 > {
     Ok(get_token(&content))
+}
+
+#[tauri::command]
+fn semantic(
+    mut syntax_tree: TreeNode,  // Recibe el árbol de sintaxis parseado
+) -> Result<(TreeNode, Vec<String>), String> {
+
+    let sym_Table = SymbolTable::new(); 
+
+    // Llama a analyze_syntax_tree para realizar la etapa semántica
+    let (annotated_tree, semantic_errors) = analyze_syntax_tree(&mut syntax_tree, sym_Table);
+
+    // Retorna el árbol de sintaxis anotado y los errores semánticos
+    Ok((annotated_tree,semantic_errors))
 }
 
 #[tauri::command]
