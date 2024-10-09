@@ -51,6 +51,8 @@ const generateSyntaxTree = async (): Promise<void> => {
     errors.value = errorsResult;
     store.resetErrors();
     store.setErrorsSyntax(errorsResult);
+    store.setSyntaxTree(result);
+    console.log("Generated syntax tree:", result);
   } catch (error) {
     console.error("Error generating syntax tree:", error);
   }

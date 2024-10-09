@@ -11,6 +11,9 @@ export const useStore = defineStore({
     flagNewFile: false,
     column: 0,
     row: 0,
+    semanticTree: null, 
+    syntaxTree: null,
+    errorSemantic: [],
     flagEditor: false,
     flagSave: false,
     errors: [] as string[][],
@@ -52,9 +55,19 @@ export const useStore = defineStore({
     setErrorsSyntax(errors: string[]) {
       this.errorsSyntax = errors;
     },
+    setSemanticTree(tree: any) {
+      this.semanticTree = tree;
+    },
+    setErrorsSemantic(errors: string[]) {
+      this.errorsSemantic = errors;
+    },
+    setSyntaxTree(tree: any) {
+      this.syntaxTree = tree;
+    },
     resetErrors() {
       this.errors = [];
       this.errorsSyntax = [];
+      this.errorsSemantic = [];
     },
   },
 });
