@@ -45,7 +45,7 @@ const generateSemanticInfo = async () => {
       return;
     }
 
-    const [result, errorsResult]: [any, string[]] = await invoke("analyze", {
+    const [result, errorsResult]: [any, string[]] = await invoke("semantic", {
       syntaxTree: syntaxTree,
     });
 
